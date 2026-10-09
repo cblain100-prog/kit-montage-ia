@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revue montage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0d0c; --panel: #161412; --line: #2a2622; --ink: #f3ede4; --mute: #a39a8e;
+    --or: #f26a10; --or2: #ff8a4c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Inter Tight", system-ui, sans-serif; }
+  body { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 30vw, 440px); width: 100vw; height: 100vh; overflow: hidden; }
+  main { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; overflow: auto; }
+  header { display: flex; align-items: baseline; gap: 14px; }
+  header h1 { font-size: 15px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; margin: 0; }
+  header h1 b { color: var(--or); }
+  header .file { color: var(--mute); font: 500 12px "JetBrains Mono", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  video { width: 100%; max-height: 52vh; background: #000; display: block; }
+  .bar { position: relative; height: 34px; cursor: pointer; }
+  .bar .track { position: absolute; left: 0; right: 0; top: 15px; height: 4px; background: var(--line); }
+  .bar .fill { position: absolute; left: 0; top: 15px; height: 4px; background: var(--ink); width: 0; }
+  .bar .mk { position: absolute; top: 6px; width: 3px; height: 22px; background: var(--or); transform: translateX(-1px); }
+  .bar .mk.fixed { background: #5f8f5a; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .time { font: 500 15px "JetBrains Mono", monospace; min-width: 120px; }
+  button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 8px 12px; }
+  button:hover { border-color: var(--mute); }
+  .cta { background: var(--or); border-color: var(--or); color: #120a04; font-weight: 900; letter-spacing: .02em; padding: 12px 18px; font-size: 15px; }
+  .cta:hover { background: var(--or2); border-color: var(--or2); }
+  kbd { font: 500 11px "JetBrains Mono", monospace; border: 1px solid currentColor; padding: 1px 5px; margin-left: 6px; opacity: .75; }
+  .composer { display: none; border: 1px solid var(--or); background: var(--panel); padding: 14px; gap: 10px; flex-direction: column; }
+  .composer.on { display: flex; }
+  .composer .at { font: 500 13px "JetBrains Mono", monospace; color: var(--or); }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { padding: 5px 10px; font-size: 13px; }
+  .tag.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  textarea { width: 100%; min-height: 64px; resize: vertical; background: var(--bg); color: var(--ink); border: 1px solid var(--line); padding: 10px; font: 400 15px "Inter Tight", sans-serif; }
+  textarea:focus { outline: none; border-color: var(--mute); }
+  .help { color: var(--mute); font-size: 12px; line-height: 1.6; }
+  aside { border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+  aside .head { padding: 18px 18px 12px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  aside .head h2 { margin: 0; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; font-weight: 900; }
+  aside .count { color: var(--or); font-weight: 900; font-size: 22px; }
+  ol { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; }
+  li { padding: 12px 18px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; cursor: pointer; }
+  li:hover { background: #1c1916; }
+  li .t { font: 500 13px "JetBrains Mono", monospace; color: var(--or); }
+  li .k { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
+  li .x { color: var(--mute); background: none; border: none; padding: 0 4px; }
+  li.fixed .t { color: #7fb276; }
+  .foot { padding: 14px 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+  .foot .cta { width: 100%; }
+  .saved { color: var(--mute); font-size: 12px; }
+  .empty { padding: 24px 18px; color: var(--mute); font-size: 14px; line-height: 1.6; }
+  .done-banner { display: none; background: #1f2a1d; color: #bfe0b8; padding: 10px 18px; font-size: 13px; }
+  .done-banner.on { display: block; }
+  .tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .tabs button { flex: 1; min-width: 0; border: none; border-right: 1px solid var(--line); background: none; padding: 14px 6px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 12px; color: var(--mute); }
+  .tabs button.on { color: var(--ink); box-shadow: inset 0 -3px 0 var(--or); }
+  .pane { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .pane.on { display: flex; }
+  .scroll { overflow: auto; flex: 1; }
+  .jt { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .jt.dirty { background: #1f1a14; }
+  .jt .txt { font-size: 14px; line-height: 1.45; margin: 4px 0 8px; cursor: pointer; }
+  .jt .txt b { color: var(--or); font-weight: 900; padding: 0 4px; }
+  .ctl { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: var(--mute); }
+  .ctl button { padding: 4px 7px; font-size: 12px; }
+  .ctl .v { font: 500 12px "JetBrains Mono", monospace; color: var(--ink); min-width: 46px; text-align: center; }
+  .ctl label { display: flex; gap: 5px; align-items: center; color: var(--ink); }
+  .row2 { display: flex; gap: 6px; margin-top: 8px; }
+  .row2 button { padding: 6px 10px; font-size: 13px; }
+  button:disabled { opacity: .3; cursor: default; }
+  .ok { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+  .tk { padding: 12px 16px; border-bottom: 1px solid var(--line); line-height: 2; }
+  .tk .w { cursor: pointer; padding: 2px 3px; border-radius: 3px; font-size: 14px; }
+  .tk .w.sel { background: var(--or); color: #120a04; }
+  .mu { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .mu .nm { font-size: 14px; font-weight: 700; }
+  .mu .at { font: 500 12px "JetBrains Mono", monospace; color: var(--or); cursor: pointer; }
+  .mu input[type=range] { width: 100%; accent-color: var(--or); }
+  .mu .lv { display: flex; justify-content: space-between; font-size: 12px; color: var(--mute); }
+  .hint { padding: 12px 16px; color: var(--mute); font-size: 13px; line-height: 1.5; border-bottom: 1px solid var(--line); }
+  .build { padding: 14px 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+  .build .st { font-size: 13px; color: var(--mute); }
+  .tl { border: 1px solid var(--line); background: var(--panel); }
+  .tlbar { display: flex; gap: 8px; align-items: center; padding: 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tlbar button { padding: 7px 12px; font-size: 14px; }
+  .tlbar .sp { flex: 1; }
+  .tlbar input[type=range] { width: 140px; accent-color: var(--or); }
+  .tlbar .st { color: var(--mute); font-size: 13px; }
+  .tlscroll { overflow-x: auto; overflow-y: hidden; position: relative; }
+  #tlc { display: block; cursor: pointer; }
+  @media (max-width: 900px) { body { grid-template-columns: 1fr; height: auto; overflow: auto; } aside { border-left: none; border-top: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Revue <b>montage</b></h1><span class="file" id="file"></span></header>
+  <video id="v" src="/video" preload="auto" playsinline></video>
+  <div class="bar" id="bar"><div class="track"></div><div class="fill" id="fill"></div></div>
+  <div class="row">
+    <span class="time" id="time">0:00.0 / 0:00</span>
+    <button id="play">Lecture<kbd>espace</kbd></button>
+    <button id="back">-2 s<kbd>←</kbd></button>
+    <button id="fwd">+2 s<kbd>→</kbd></button>
+    <button id="slow">Vitesse 1×<kbd>V</kbd></button>
+    <button class="cta" id="new">Commenter ici<kbd>C</kbd></button>
+  </div>
+  <div class="tl">
+    <div class="tlbar">
+      <button id="tsplit">Couper ici<kbd>S</kbd></button>
+      <button id="tdel" disabled>Supprimer le morceau<kbd>Suppr</kbd></button>
+      <button id="tundo" disabled>Annuler<kbd>⌘Z</kbd></button>
+      <span class="st" id="tst">Clique pour te placer, S pour couper, clique sur un morceau puis Suppr pour l'enlever.</span>
+      <span class="sp"></span>
+      <span class="st">Zoom</span><input type="range" id="tzoom" min="4" max="60" value="24">
+      <button class="cta" id="tapply" disabled>Appliquer et reconstruire</button>
+    </div>
+    <div class="tlscroll" id="tls"><canvas id="tlc" height="120"></canvas></div>
+  </div>
+  <div class="composer" id="composer">
+    <div class="row"><span class="at" id="at"></span><span class="help">Le temps est noté tout seul. Choisis un thème, écris ou dicte, puis Entrée.</span></div>
+    <div class="tags" id="tags"></div>
+    <textarea id="txt" placeholder="Ex. : coupe trop longue avant « la plupart », il faut que ça enchaîne"></textarea>
+    <div class="row">
+      <button class="cta" id="save">Enregistrer<kbd>Entrée</kbd></button>
+      <button id="mic">Dicter</button>
+      <button id="cancel">Annuler<kbd>Échap</kbd></button>
+    </div>
+  </div>
+  <p class="help">Raccourcis : espace lecture/pause, ← → 2 secondes, , et . une image, C commenter. Chaque commentaire est enregistré tout de suite, rien ne se perd si tu fermes la page.</p>
+</main>
+<aside>
+  <div class="tabs"><button class="on" data-p="p-com">Retours</button><button data-p="p-mus">Musique</button></div>
+  <div class="pane on" id="p-com">
+    <div class="done-banner" id="banner">Envoyé. Dis à Claude « c'est fait », il applique toute la liste d'un coup.</div>
+    <div class="head"><h2>Tes retours</h2><span class="count" id="count">0</span></div>
+    <ol id="list" class="scroll"></ol>
+    <div class="foot"><button class="cta" id="done">J'ai fini, envoyer à Claude</button><span class="saved" id="saved"></span></div>
+  </div>
+  <div class="pane" id="p-cut">
+    <div class="hint">Chaque raccord entre deux prises. Avance ou recule la <b>fin</b> de la phrase d'avant et le <b>début</b> de celle d'après, coche « phrase continue » pour coller deux prises, écoute, puis valide. Clique sur le texte pour voir le passage.</div>
+    <div class="scroll" id="joints"></div>
+  </div>
+  <div class="pane" id="p-txt">
+    <div class="hint">Pour retirer des mots (une redite, un « euh ») : clique sur le premier mot puis sur le dernier, puis « Retirer ces mots ».</div>
+    <div class="scroll" id="takes"></div>
+    <div class="build"><button class="ok" id="delw" disabled>Retirer ces mots</button></div>
+  </div>
+  <div class="pane" id="p-mus">
+    <div class="hint">Le volume de chaque morceau sous ta voix. Vers la droite = plus fort. « Écouter » prépare le mix complet (environ 1 minute) et le joue sur la vidéo.</div>
+    <div class="scroll" id="music"></div>
+    <div class="build"><div class="row2"><button id="mlisten">Écouter le mix</button><button class="ok" id="msave">Enregistrer</button></div><span class="st" id="mst"></span></div>
+  </div>
+  <div class="build"><button class="cta" id="rebuild">Reconstruire la vidéo avec mes changements</button><span class="st" id="bst">Environ 25 minutes. La nouvelle version s'ouvre ici toute seule.</span></div>
+</aside>
+<audio id="mixa" preload="auto"></audio>
+<audio id="ja"></audio>
+<script>
+const TAGS = ["Coupe", "Mot-clé", "Visuel", "Zoom", "Son", "Musique", "Texte dit", "Autre"];
+const v = document.getElementById("v"), $ = id => document.getElementById(id);
+let data = { comments: [], done: false }, draftT = 0, tag = "Coupe", editing = false;
+const fmt = t => { const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s.toFixed(1).padStart(4, "0")}`; };
+
+async function load() {
+  const r = await fetch("/comments"); data = await r.json();
+  $("file").textContent = data.title || "";
+  render();
+}
+async function persist() {
+  const r = await fetch("/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  const j = await r.json();
+  $("saved").textContent = "Enregistré à " + new Date().toLocaleTimeString("fr-FR");
+}
+function render() {
+  const cs = [...data.comments].sort((a, b) => a.t - b.t);
+  $("count").textContent = cs.length;
+  $("banner").classList.toggle("on", !!data.done);
+  $("list").innerHTML = cs.length ? "" : '<div class="empty">Aucun retour pour l\'instant. Lance la vidéo et appuie sur C dès que quelque chose ne va pas.</div>';
+  for (const c of cs) {
+    const li = document.createElement("li");
+    if (c.status === "fixed") li.classList.add("fixed");
+    li.innerHTML = `<span class="t">${fmt(c.t)}</span><span><div class="k">${c.tag}${c.status === "fixed" ? " · corrigé" : ""}</div>${escapeHtml(c.text)}</span><button class="x" title="Supprimer">✕</button>`;
+    li.onclick = e => { if (e.target.classList.contains("x")) return; v.currentTime = Math.max(0, c.t - 1.5); v.play(); };
+    li.querySelector(".x").onclick = () => { data.comments = data.comments.filter(x => x.id !== c.id); persist(); render(); };
+    $("list").appendChild(li);
+  }
+  const bar = $("bar"); bar.querySelectorAll(".mk").forEach(m => m.remove());
+  if (v.duration) for (const c of cs) {
+    const m = document.createElement("div"); m.className = "mk" + (c.status === "fixed" ? " fixed" : "");
+    m.style.left = (100 * c.t / v.duration) + "%"; m.title = `${fmt(c.t)} ${c.text}`; bar.appendChild(m);
+  }
+}
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function openComposer() {
+  v.pause(); draftT = v.currentTime; editing = true;
+  $("at").textContent = "À " + fmt(draftT);
+  $("composer").classList.add("on"); $("txt").value = ""; $("txt").focus();
+}
+function closeComposer() { editing = false; $("composer").classList.remove("on"); }
+function save() {
+  const text = $("txt").value.trim(); if (!text) return;
+  data.comments.push({ id: Date.now().toString(36), t: +draftT.toFixed(2), tag, text, status: "open" });
+  data.done = false; persist(); render(); closeComposer();
+}
+$("tags").innerHTML = TAGS.map(t => `<button class="tag${t === tag ? " on" : ""}">${t}</button>`).join("");
+$("tags").onclick = e => { if (!e.target.classList.contains("tag")) return; tag = e.target.textContent; [...$("tags").children].forEach(b => b.classList.toggle("on", b.textContent === tag)); $("txt").focus(); };
+$("new").onclick = openComposer; $("save").onclick = save; $("cancel").onclick = closeComposer;
+$("play").onclick = () => v.paused ? v.play() : v.pause();
+$("back").onclick = () => v.currentTime -= 2; $("fwd").onclick = () => v.currentTime += 2;
+// speed (« je veux pouvoir voir en x2 pour aller plus vite dans ma relecture ») : 1, 1.5, 2, 0.5, button or V,
+// kept across a rebuild (a new src resets playbackRate) and between visits ; the browser keeps the voice's pitch
+const SPEEDS = [1, 1.5, 2, 0.5];
+function setRate(r) {
+  v.playbackRate = r; v.defaultPlaybackRate = r;
+  $("slow").firstChild.textContent = `Vitesse ${String(r).replace(".", ",")}×`;
+  try { localStorage.setItem("reviewRate", r); } catch (e) {}
+}
+function nextRate() { setRate(SPEEDS[(SPEEDS.indexOf(v.playbackRate) + 1) % SPEEDS.length] || 1); }
+$("slow").onclick = nextRate;
+v.addEventListener("loadedmetadata", () => { if (v.playbackRate !== v.defaultPlaybackRate) v.playbackRate = v.defaultPlaybackRate; });
+try { const r0 = parseFloat(localStorage.getItem("reviewRate")); if (SPEEDS.includes(r0)) setRate(r0); } catch (e) {}
+$("done").onclick = () => { data.done = true; persist(); render(); };
+$("bar").onclick = e => { const r = $("bar").getBoundingClientRect(); v.currentTime = (e.clientX - r.left) / r.width * v.duration; };
+v.ontimeupdate = () => { $("time").textContent = `${fmt(v.currentTime)} / ${fmt(v.duration || 0)}`; $("fill").style.width = (100 * v.currentTime / (v.duration || 1)) + "%"; };
+v.onloadedmetadata = render;
+v.onplay = () => $("play").firstChild.textContent = "Pause"; v.onpause = () => $("play").firstChild.textContent = "Lecture";
+document.addEventListener("keydown", e => {
+  if (editing) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); }
+    if (e.key === "Escape") closeComposer();
+    return;
+  }
+  if (e.key === " ") { e.preventDefault(); v.paused ? v.play() : v.pause(); }
+  if (e.key === "ArrowLeft") v.currentTime -= 2;
+  if (e.key === "ArrowRight") v.currentTime += 2;
+  if (e.key === ",") { v.pause(); v.currentTime -= 1 / 30; }
+  if (e.key === ".") { v.pause(); v.currentTime += 1 / 30; }
+  if (e.key.toLowerCase() === "c") { e.preventDefault(); openComposer(); }
+  if (e.key.toLowerCase() === "v" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); nextRate(); }
+});
+// dictation (Chromium browsers : Web Speech API, French)
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) $("mic").style.display = "none";
+else $("mic").onclick = () => {
+  const r = new SR(); r.lang = "fr-FR"; r.interimResults = false;
+  $("mic").textContent = "J'écoute…";
+  r.onresult = e => { $("txt").value += ($("txt").value ? " " : "") + e.results[0][0].transcript; $("txt").focus(); };
+  r.onend = () => $("mic").textContent = "Dicter";
+  r.start();
+};
+load();
+
+// ---------- tabs
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".pane").forEach(p => p.classList.toggle("on", p.id === b.dataset.p));
+  if (b.dataset.p === "p-cut" && !$("joints").children.length) loadJoints();
+  if (b.dataset.p === "p-txt" && !$("takes").children.length) loadTakes();
+  if (b.dataset.p === "p-mus" && !$("music").children.length) loadMusic();
+});
+const api = (u, body) => fetch(u, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}).then(r => r.json());
+const sec = x => (x > 0 ? "+" : "") + x.toFixed(2) + " s";
+// ---------- cuts
+async function loadJoints() {
+  const J = await api("/api/joints"); const box = $("joints"); box.innerHTML = "";
+  for (const j of J) {
+    const d = document.createElement("div"); d.className = "jt";
+    let de = 0, ds = 0, join = j.join;
+    d.innerHTML = `<span class="t" style="font:500 13px 'JetBrains Mono';color:var(--or)">${fmt(j.out)}</span>
+      <div class="txt">${escapeHtml(j.before)}<b>|</b>${escapeHtml(j.after)}</div>
+      <div class="ctl">Fin <button data-k="e" data-v="-0.1">−0,1</button><button data-k="e" data-v="-0.05">−0,05</button><span class="v" id="ve${j.i}">0</span><button data-k="e" data-v="0.05">+0,05</button><button data-k="e" data-v="0.1">+0,1</button></div>
+      <div class="ctl">Début <button data-k="s" data-v="-0.1">−0,1</button><button data-k="s" data-v="-0.05">−0,05</button><span class="v" id="vs${j.i}">0</span><button data-k="s" data-v="0.05">+0,05</button><button data-k="s" data-v="0.1">+0,1</button>
+        <label><input type="checkbox" ${join ? "checked" : ""}> phrase continue</label></div>
+      <div class="row2"><button class="lis">Écouter</button><button class="ok val" disabled>Valider</button><button class="del" title="Retire toute la prise qui suit ce raccord">Supprimer la prise d'après</button></div>`;
+    const upd = () => { d.querySelector(`#ve${j.i}`).textContent = de ? sec(de) : "0"; d.querySelector(`#vs${j.i}`).textContent = ds ? sec(ds) : "0";
+      const dirty = de || ds || join !== j.join; d.classList.toggle("dirty", !!dirty); d.querySelector(".val").disabled = !dirty; };
+    d.querySelectorAll(".ctl button").forEach(b => b.onclick = () => { const v = +b.dataset.v; if (b.dataset.k === "e") de = +(de + v).toFixed(2); else ds = +(ds + v).toFixed(2); upd(); });
+    d.querySelector("input").onchange = e => { join = e.target.checked; upd(); };
+    d.querySelector(".txt").onclick = () => { v.currentTime = Math.max(0, j.out - 2.5); v.play(); };
+    d.querySelector(".lis").onclick = async e => { e.target.textContent = "…"; v.pause();
+      const a = $("ja"); a.src = `/api/joint.wav?i=${j.i}&de=${de}&ds=${ds}&join=${join === j.join ? "" : (join ? 1 : 0)}&t=${Date.now()}`;
+      a.oncanplay = () => { e.target.textContent = "Écouter"; a.play(); }; a.load(); };
+    d.querySelector(".val").onclick = async () => { await api("/api/joint", { i: j.i, de, ds, join: join === j.join ? null : join }); markChanged(); loadJoints(); };
+    d.querySelector(".del").onclick = async () => { if (!confirm("Retirer toute la prise : « " + j.after + "… » ?")) return; await api("/api/take/delete", { i: j.i + 1 }); markChanged(); loadJoints(); };
+    box.appendChild(d);
+  }
+}
+// ---------- words
+let selW = null;
+async function loadTakes() {
+  const T = await api("/api/takes"); const box = $("takes"); box.innerHTML = ""; selW = null; $("delw").disabled = true;
+  for (const t of T) {
+    const d = document.createElement("div"); d.className = "tk";
+    d.innerHTML = `<span class="t" style="font:500 13px 'JetBrains Mono';color:var(--or);cursor:pointer">${fmt(t.out)}</span> ` +
+      t.words.map((w, k) => `<span class="w" data-k="${k}">${escapeHtml(w[0])}</span>`).join(" ");
+    d.querySelector(".t").onclick = () => { v.currentTime = Math.max(0, t.out - 0.5); v.play(); };
+    d.querySelectorAll(".w").forEach(el => el.onclick = () => {
+      const k = +el.dataset.k;
+      if (!selW || selW.t !== t.i || selW.b !== null) selW = { t: t.i, a: k, b: null, words: t.words };
+      else selW.b = k;
+      box.querySelectorAll(".w").forEach(x => x.classList.remove("sel"));
+      const lo = selW.b === null ? selW.a : Math.min(selW.a, selW.b), hi = selW.b === null ? selW.a : Math.max(selW.a, selW.b);
+      d.querySelectorAll(".w").forEach(x => { const kk = +x.dataset.k; if (kk >= lo && kk <= hi) x.classList.add("sel"); });
+      $("delw").disabled = false;
+    });
+    box.appendChild(d);
+  }
+}
+$("delw").onclick = async () => {
+  if (!selW) return;
+  const lo = selW.b === null ? selW.a : Math.min(selW.a, selW.b), hi = selW.b === null ? selW.a : Math.max(selW.a, selW.b);
+  const txt = selW.words.slice(lo, hi + 1).map(w => w[0]).join(" ");
+  if (!confirm("Retirer « " + txt + " » ?")) return;
+  await api("/api/words", { i: selW.t, ws: selW.words[lo][1], we: selW.words[hi][2] }); markChanged(); loadTakes();
+};
+// ---------- music
+let levels = {};
+async function loadMusic() {
+  const M = await api("/api/music"); const box = $("music"); box.innerHTML = ""; levels = {};
+  for (const g of M.segments) {
+    const d = document.createElement("div"); d.className = "mu";
+    d.innerHTML = `<div class="nm">${escapeHtml(g.track)}</div><span class="at">à ${fmt(g.t)}${g.t < 1 ? " (intro)" : ""}</span>
+      <input type="range" min="-30" max="-6" step="1" value="${-g.under_db}"><div class="lv"><span>plus bas</span><span class="cur">${g.under_db} dB sous ta voix</span><span>plus fort</span></div>`;
+    d.querySelector(".at").onclick = () => { v.currentTime = g.t; v.play(); };
+    d.querySelector("input").oninput = e => { const u = -(+e.target.value); levels[g.j] = u; d.querySelector(".cur").textContent = u + " dB sous ta voix"; $("mst").textContent = "Pas encore enregistré."; };
+    box.appendChild(d);
+  }
+}
+const mixa = $("mixa"); let mixOn = false;
+function syncMix() { if (!mixOn) return; if (Math.abs(mixa.currentTime - v.currentTime) > 0.15) mixa.currentTime = v.currentTime; }
+v.addEventListener("play", () => { if (mixOn) { syncMix(); mixa.play(); } });
+v.addEventListener("pause", () => mixa.pause());
+v.addEventListener("seeked", syncMix);
+v.addEventListener("timeupdate", syncMix);
+$("mlisten").onclick = async () => {
+  $("mst").textContent = "Je prépare le mix (environ 1 minute)…"; $("mlisten").disabled = true;
+  const r = await api("/api/music/preview", { levels }); $("mlisten").disabled = false;
+  if (r.error) { $("mst").textContent = "Erreur : " + r.error; return; }
+  mixa.src = r.url; mixOn = true; v.muted = true; $("mst").textContent = "Tu écoutes le mix réglé (la vidéo est coupée, le son vient du mix).";
+  mixa.oncanplay = () => { syncMix(); if (!v.paused) mixa.play(); };
+};
+$("msave").onclick = async () => { await api("/api/music", { levels }); $("mst").textContent = "Enregistré."; markChanged(); };
+// ---------- rebuild
+function markChanged() { $("bst").textContent = "Changements enregistrés. Clique sur « Reconstruire » quand tu as fini."; }
+$("rebuild").onclick = async () => {
+  if (!confirm("Reconstruire la vidéo avec tes changements ? (environ 25 minutes)")) return;
+  const r = await api("/api/rebuild", {}); if (!r.ok) { $("bst").textContent = r.error; return; } poll();
+};
+async function poll() {
+  const s = await api("/api/status");
+  if (s.state === "running") { $("rebuild").disabled = true; $("bst").textContent = `En cours : ${s.step || "démarrage"} (${Math.floor((s.elapsed || 0) / 60)} min)`; setTimeout(poll, 5000); }
+  else if (s.state === "done") {
+    // reload only if the page still shows the old video (2026-10-04 : it reloaded forever once a rebuild was done)
+    if (data.title && data.title !== s.name + ".mp4") { $("bst").textContent = "C'est prêt, je charge la nouvelle version…"; setTimeout(() => location.reload(), 1500); }
+    else { $("rebuild").disabled = false; $("bst").textContent = "Environ 25 minutes. La nouvelle version s'ouvre ici toute seule."; }
+  }
+  else if (s.state === "error") { $("rebuild").disabled = false; $("bst").textContent = "La reconstruction a échoué, dis-le à Claude."; }
+}
+// ---------- Tella-like timeline : click to seek, S to split, select a piece, Delete, Cmd+Z ; playback skips deleted pieces
+const TL = { wave: null, cuts: [], splits: [], del: [], hist: [], sel: null, pps: 24 };
+const cv = $("tlc"), tls = $("tls"), cx = cv.getContext("2d");
+async function tlLoad() {
+  const [w, c] = await Promise.all([api("/api/wave"), api("/api/cuts")]);
+  TL.wave = w; TL.cuts = c; tlDraw();
+}
+function bounds() { return [0, ...new Set([...TL.cuts, ...TL.splits])].filter(x => x > 0).concat([0, TL.wave.dur]).sort((a, b) => a - b).filter((x, i, a) => i === 0 || x - a[i - 1] > 0.01); }
+function segAt(t) { const b = bounds(); for (let i = 0; i < b.length - 1; i++) if (t >= b[i] && t < b[i + 1]) return [b[i], b[i + 1]]; return null; }
+const isDel = (a, b) => TL.del.some(d => d[0] <= a + 0.005 && d[1] >= b - 0.005);
+function tlDraw() {
+  if (!TL.wave) return;
+  const W = Math.max(tls.clientWidth, Math.ceil(TL.wave.dur * TL.pps)), H = 120;
+  if (cv.width !== W) cv.width = W;
+  cx.clearRect(0, 0, W, H); cx.fillStyle = "#161412"; cx.fillRect(0, 0, W, H);
+  // deleted pieces
+  for (const [a, b] of TL.del) { cx.fillStyle = "rgba(229,72,77,.22)"; cx.fillRect(a * TL.pps, 0, (b - a) * TL.pps, H);
+    cx.strokeStyle = "rgba(229,72,77,.5)"; for (let x = a * TL.pps; x < b * TL.pps; x += 8) { cx.beginPath(); cx.moveTo(x, H); cx.lineTo(x + 8, H - 16); cx.stroke(); } }
+  // selection
+  if (TL.sel) { cx.fillStyle = "rgba(242,106,16,.18)"; cx.fillRect(TL.sel[0] * TL.pps, 0, (TL.sel[1] - TL.sel[0]) * TL.pps, H);
+    cx.strokeStyle = "#f26a10"; cx.lineWidth = 2; cx.strokeRect(TL.sel[0] * TL.pps + 1, 1, (TL.sel[1] - TL.sel[0]) * TL.pps - 2, H - 2); cx.lineWidth = 1; }
+  // waveform
+  const pk = TL.wave.peaks, per = TL.wave.per_s, mid = H / 2 + 8;
+  for (let x = 0; x < W; x++) {
+    const t0 = x / TL.pps, i0 = Math.floor(t0 * per), i1 = Math.max(i0 + 1, Math.floor((x + 1) / TL.pps * per));
+    let m = 0; for (let i = i0; i < i1 && i < pk.length; i++) m = Math.max(m, pk[i]);
+    const h = m / 255 * (H / 2 - 14);
+    cx.fillStyle = isDel(t0, t0 + 1 / TL.pps) ? "#5a3a36" : "#a39a8e"; cx.fillRect(x, mid - h, 1, h * 2);
+  }
+  // existing cuts and new splits
+  cx.fillStyle = "#4a443e"; for (const t of TL.cuts) cx.fillRect(Math.round(t * TL.pps), 16, 1, H - 16);
+  cx.fillStyle = "#f26a10"; for (const t of TL.splits) cx.fillRect(Math.round(t * TL.pps) - 1, 0, 2, H);
+  // time ruler
+  cx.fillStyle = "#6b645c"; cx.font = "10px JetBrains Mono";
+  const step = TL.pps > 60 ? 1 : TL.pps > 20 ? 5 : TL.pps > 8 ? 10 : 30;
+  for (let t = 0; t < TL.wave.dur; t += step) { cx.fillRect(t * TL.pps, 0, 1, 5); cx.fillText(fmt(t).replace(/\.\d$/, ""), t * TL.pps + 3, 12); }
+  // playhead
+  cx.fillStyle = "#f3ede4"; cx.fillRect(Math.round(v.currentTime * TL.pps), 0, 2, H);
+  $("tdel").disabled = !TL.sel; $("tundo").disabled = !TL.hist.length; $("tapply").disabled = !TL.del.length;
+}
+function push() { TL.hist.push(JSON.stringify({ s: TL.splits, d: TL.del })); }
+function merged() { const d = [...TL.del].sort((a, b) => a[0] - b[0]), out = []; for (const r of d) { if (out.length && r[0] <= out[out.length - 1][1] + 0.01) out[out.length - 1][1] = Math.max(out[out.length - 1][1], r[1]); else out.push([...r]); } return out; }
+function tlSplit() { const t = +v.currentTime.toFixed(2); if (TL.splits.some(x => Math.abs(x - t) < 0.02)) return; push(); TL.splits.push(t); TL.sel = null; tlDraw(); }
+function tlDelete() { if (!TL.sel) return; push(); TL.del.push([...TL.sel]); TL.del = merged(); const end = TL.sel[1]; TL.sel = null;
+  if (v.currentTime >= TL.del[0][0] - 0.01) v.currentTime = end; $("tst").textContent = "Supprimé. La lecture saute ce morceau ; « Appliquer » le retire vraiment."; tlDraw(); }
+function tlUndo() { const h = TL.hist.pop(); if (!h) return; const o = JSON.parse(h); TL.splits = o.s; TL.del = o.d; TL.sel = null; tlDraw(); }
+cv.addEventListener("click", e => {
+  const r = cv.getBoundingClientRect(), t = (e.clientX - r.left) / TL.pps;
+  const seg = segAt(t);
+  if (e.detail === 1) { v.currentTime = t; TL.sel = (TL.sel && seg && TL.sel[0] === seg[0]) ? null : (e.shiftKey || e.altKey || true) && seg; tlDraw(); }
+});
+$("tsplit").onclick = tlSplit; $("tdel").onclick = tlDelete; $("tundo").onclick = tlUndo;
+$("tzoom").oninput = e => { const c = v.currentTime; TL.pps = +e.target.value; tlDraw(); tls.scrollLeft = c * TL.pps - tls.clientWidth / 2; };
+// playback : skip deleted pieces, keep the playhead in view
+(function loop() {
+  for (const [a, b] of TL.del) if (v.currentTime >= a && v.currentTime < b - 0.02) { v.currentTime = b; break; }
+  if (TL.wave) { const x = v.currentTime * TL.pps; if (!v.paused && (x < tls.scrollLeft || x > tls.scrollLeft + tls.clientWidth - 40)) tls.scrollLeft = x - 80; tlDraw(); }
+  requestAnimationFrame(loop);
+})();
+document.addEventListener("keydown", e => {
+  if (editing || e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if (e.key.toLowerCase() === "s" && !e.metaKey) { e.preventDefault(); tlSplit(); }
+  if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); tlDelete(); }
+  if (e.key.toLowerCase() === "z" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); tlUndo(); }
+});
+$("tapply").onclick = async () => {
+  const d = merged(); const tot = d.reduce((s, r) => s + r[1] - r[0], 0);
+  if (!confirm(`Retirer ${d.length} morceau(x) (${tot.toFixed(1)} s) et reconstruire la vidéo ? (environ 25 minutes)`)) return;
+  const r = await api("/api/delete_ranges", { ranges: d }); if (r.error) { $("tst").textContent = "Erreur : " + r.error; return; }
+  const b = await api("/api/rebuild", {}); if (!b.ok) { $("tst").textContent = b.error; return; }
+  TL.del = []; TL.splits = []; TL.hist = []; $("tst").textContent = "C'est parti, la nouvelle version arrive ici (environ 25 minutes)."; poll();
+};
+tlLoad();
+
+setTimeout(poll, 800);  // after load() has read the current video title
+if (location.hash) { const b = document.querySelector(`.tabs button[data-p='p-${location.hash.slice(1)}']`); if (b) b.click(); }
+</script>
+</body>
+</html>
