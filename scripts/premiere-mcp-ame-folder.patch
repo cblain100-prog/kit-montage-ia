@@ -1,0 +1,13 @@
+diff --git a/src/bridge/index.ts b/src/bridge/index.ts
+index e2c4e8c..fc96515 100644
+--- a/src/bridge/index.ts
++++ b/src/bridge/index.ts
+@@ -1594,7 +1594,7 @@ export class PremiereProBridge implements PremiereProTransport {
+       const applications = '/Applications';
+       try {
+         const entries = await fs.readdir(applications);
+-        const found = entries.some((entry) => /^Adobe Media Encoder(?: \d+)?\.app$/i.test(entry));
++        const found = entries.some((entry) => /^Adobe Media Encoder(?: \d+)?(?:\.app)?$/i.test(entry)); // macOS installs it as a folder « Adobe Media Encoder 2026 » (local fix)
+         return { available: found, searchedPaths: [applications] };
+       } catch {
+         return { available: true, searchedPaths: [applications] };
