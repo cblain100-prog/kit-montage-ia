@@ -27,7 +27,8 @@ BUSY=$(pgrep -f "premiere/build_timeline.py" | grep -v $$ | head -1 || true)
 if [ "$HB" -lt 60000 ] && [ -z "$BUSY" ]; then
   echo "STEP 5/6 montage Premiere et export"; "$PY" -u premiere/build_timeline.py "$SLUG" --name "$NAME" --export
 else
-  echo "STEP 5/6 montage (Premiere indisponible : look ffmpeg + moteur)"; rm -rf "$W/look-ff"; "$PY" tools/look_ffmpeg.py "$SLUG" && "$PY" prompteur.py compose "$SLUG" "$NAME"
+  echo "STEP 5/6 montage (Premiere indisponible : look ffmpeg + moteur, et fichier XML à importer dans Premiere)"; rm -rf "$W/look-ff"; "$PY" tools/look_ffmpeg.py "$SLUG" && "$PY" prompteur.py compose "$SLUG" "$NAME"
+  "$PY" tools/export_xml.py "$SLUG" "$NAME" || echo "export XML impossible (le rendu ffmpeg est fait)"
 fi
 echo "STEP 6/6 livraison"; cp "projects/$SLUG/renders/$NAME.mp4" "$OUT/$NAME.mp4"
 echo "STEP fini $OUT/$NAME.mp4"

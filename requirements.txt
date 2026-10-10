@@ -6,3 +6,6 @@ pillow==12.1.1
 # Whisper : on the Apple GPU for Apple Silicon Macs, openai-whisper (CPU, slower) on Intel Macs
 mlx-whisper==0.4.3; platform_machine == "arm64"
 openai-whisper==20250625; platform_machine != "arm64"
+# timeline XML for Premiere when the bridge is down (tools/export_xml.py), Apache-2.0
+opentimelineio==0.18.1
+otio-fcp-adapter==1.0.0
