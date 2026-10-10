@@ -63,7 +63,7 @@ Pour tout enlever : `bash scripts/uninstall-premiere.sh`. Il retire le connecteu
 
 Tes rushes, tes transcriptions, tes montages et ton style restent sur ton Mac : le dossier `projects/` et ton style ne partent jamais sur GitHub. Le kit n'utilise aucune clé d'API : il passe par ton abonnement Claude Code.
 
-## Ce que fait cette version (0.1)
+## Ce que fait cette version (0.3)
 
 - Un ou deux téléphones, vidéo YouTube 16:9 où tu parles face caméra.
 - Mac uniquement.
