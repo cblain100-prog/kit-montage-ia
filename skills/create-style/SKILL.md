@@ -1,6 +1,6 @@
 ---
-name: style-de-montage
-description: Crée le style de montage de l'utilisateur, à faire avant son premier montage, sans qu'il ait rien à écrire. Pose ses questions une par une (une vidéo montée dont il aime le rendu, la sienne ou une référence, son site ou sa charte, puis de courts extraits A/B/C sur une de ses phrases pour les cadrages, le rythme, les zooms, les bruitages, la musique et les mots à l'écran) et écrit looks/<nom>/look.json, que le skill montage-youtube applique ensuite à chaque vidéo. Utiliser quand l'utilisateur dit "/style-de-montage", "crée mon style de montage", "définis mon style", "je veux mon propre montage", ou quand montage-youtube le lance faute de style.
+name: create-style
+description: Crée le style de montage de l'utilisateur, à faire avant son premier montage, sans qu'il ait rien à écrire. Pose ses questions une par une (une vidéo montée dont il aime le rendu, la sienne ou une référence, son site ou sa charte, puis de courts extraits A/B/C sur une de ses phrases pour les cadrages, le rythme, les zooms, les bruitages, la musique et les mots à l'écran) et écrit looks/<nom>/look.json, que le skill montage applique ensuite à chaque vidéo. Utiliser quand l'utilisateur dit "/create-style", "crée mon style de montage", "définis mon style", "je veux mon propre montage", "crée mon style", "créer mon style de montage", ou quand le skill montage le lance faute de style.
 ---
 
 # Créer le style de montage
@@ -12,11 +12,13 @@ On ne décrit pas un montage à l'IA avec des mots (« dynamique » ne veut pas 
 ## 0. Trouver le kit
 
 ```bash
-KIT="$(cat ~/.config/kit-montage-ia/kit_dir 2>/dev/null)"; [ -d "$KIT/.venv" ] || KIT="$HOME/kit-montage-ia"
-cd "$KIT" && PY="$KIT/.venv/bin/python" && $PY tools/check.py
+KIT="$(cat ~/.config/kit-montage-ia/kit_dir 2>/dev/null)"
+SK="$(python3 -c 'import os; print(os.path.realpath(os.path.expanduser("~/.claude/skills/create-style")))' 2>/dev/null)"
+for d in "$KIT" "$(dirname "$(dirname "$SK")")" "$HOME/kit-montage-ia" $(find "$HOME" -maxdepth 2 -name kit-montage-ia -type d 2>/dev/null); do [ -d "$d/.venv" ] && KIT="$d" && break; done
+if [ -d "$KIT/.venv" ]; then echo "KIT=$KIT"; cd "$KIT"; PY="$KIT/.venv/bin/python"; $PY tools/check.py; else echo "KIT INTROUVABLE"; fi
 ```
 
-Kit absent ou ligne « MANQUE » : installe-le comme le dit le skill `montage-youtube` (étape 0), puis reviens ici. Nom du style : sa marque ou son prénom en minuscules, sans espace. `cp -r looks/_modele looks/<nom>` : la structure, toutes les valeurs vides.
+Kit absent ou ligne « MANQUE » : installe-le comme le dit le skill `montage` (étape 0, points 1 et 2), puis reviens ici. Nom du style : sa marque ou son prénom en minuscules, sans espace. `cp -r looks/_modele looks/<nom>` : la structure, toutes les valeurs vides.
 
 ## 1. Une vidéo dont il aime le montage
 
@@ -72,5 +74,5 @@ Ensuite, deux questions courtes, seulement s'il a une musique : **« Tu veux un 
 
 - Écris `looks/<nom>/look.json` : même structure que `looks/_modele/look.json`, chaque valeur choisie avec un `_why` qui cite sa réponse et la date, `name` rempli. Vérifie que c'est du JSON valide (`$PY -c "import json; json.load(open('looks/<nom>/look.json'))"`).
 - Résume-le en 7 lignes au plus : cadrages, rythme, zooms, bruitages, musique, mots à l'écran, couleurs et police.
-- Demande : **« Je garde ce style ? »** Il corrige un point : tu changes cette valeur et tu remontres le résumé. Il valide : dis-lui que le skill `montage-youtube` l'appliquera à chaque vidéo, et que ses retours dans le studio l'affineront.
+- Demande : **« Je garde ce style ? »** Il corrige un point : tu changes cette valeur et tu remontres le résumé. Il valide : dis-lui que le skill `montage` l'appliquera à chaque vidéo, et que ses retours dans le studio l'affineront.
 - Supprime le projet d'essai (`rm -rf projects/style-<nom>`), garde `projects/_styles/<nom>/`.

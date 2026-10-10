@@ -1,5 +1,5 @@
 {
-  "_doc": "Structure of a creator's style. Copied to looks/<name>/look.json and filled ONLY by the « style-de-montage » skill, from the creator's own answers : their edited video (or a reference video whose editing they like, measured by tools/analyse_style.py), their brand, and their picks on A/B/C choice videos. Every empty value means « not chosen yet » : the engine then does the neutral thing (no zoom, no sound effect, no music, no keyword). Each chosen value carries a _why with the creator's answer and the date.",
+  "_doc": "Structure of a creator's style. Copied to looks/<name>/look.json and filled ONLY by the « create-style » skill, from the creator's own answers : their edited video (or a reference video whose editing they like, measured by tools/analyse_style.py), their brand, and their picks on A/B/C choice videos. Every empty value means « not chosen yet » : the engine then does the neutral thing (no zoom, no sound effect, no music, no keyword). Each chosen value carries a _why with the creator's answer and the date.",
   "name": null,
   "brand": {
     "accent": null,

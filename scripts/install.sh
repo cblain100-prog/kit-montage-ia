@@ -73,7 +73,7 @@ if [ "$SKILLS" = 1 ]; then
   mkdir -p "$HOME/.config/kit-montage-ia"
   echo "$KIT" > "$HOME/.config/kit-montage-ia/kit_dir"
   mkdir -p "$SKILLS_DIR"
-  for s in style-de-montage montage-youtube; do
+  for s in create-style montage; do
     if [ -e "$SKILLS_DIR/$s" ] && [ ! -L "$SKILLS_DIR/$s" ]; then
       echo "$SKILLS_DIR/$s existe déjà (pas un lien) : laissé tel quel"
     else

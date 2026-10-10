@@ -2,7 +2,7 @@
 
 ## Polices (`fonts/`)
 
-Toutes sous licence SIL Open Font License 1.1 (le fichier de licence est à côté de chaque police) : Inter, Inter Tight, Poppins, Anton, JetBrains Mono, Instrument Serif. Tu peux ajouter la police de ta marque ici (avec son fichier de licence) : le skill `style-de-montage` le fait pour une police Google Fonts.
+Toutes sous licence SIL Open Font License 1.1 (le fichier de licence est à côté de chaque police) : Inter, Inter Tight, Poppins, Anton, JetBrains Mono, Instrument Serif. Tu peux ajouter la police de ta marque ici (avec son fichier de licence) : le skill `create-style` le fait pour une police Google Fonts.
 
 ## Bruitages (`sfx/`, pas dans le dépôt)
 

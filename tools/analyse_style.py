@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measures the editing style of one of the creator's OWN edited videos, to seed their look (« style-de-montage » skill).
+"""Measures the editing style of one of the creator's OWN edited videos, to seed their look (« create-style » skill).
 
   python3 tools/analyse_style.py <video> [--out folder] [--name mon-style] [--demucs]
 

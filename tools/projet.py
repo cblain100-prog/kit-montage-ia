@@ -224,7 +224,7 @@ def main():
     if not os.path.exists(look_f):
         raise SystemExit(f"no style looks/{A.look}/look.json")
     if A.look == "_modele":
-        print("  ! no personal style yet : neutral values (no zoom, no sound effect, no music). The style-de-montage skill creates it.")
+        print("  ! no personal style yet : neutral values (no zoom, no sound effect, no music). The create-style skill creates it.")
     look = json.load(open(look_f))
     fr = (look.get("framing") or {}).get("one_camera" if len(cams) == 1 else "two_cameras") or {}
     plan_f = M.P(A.slug, "plan.json")

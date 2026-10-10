@@ -1,6 +1,6 @@
 # Règles de qualité du kit
 
-Ces règles valent pour toutes les vidéos, quel que soit le créateur. Ce ne sont pas des goûts : ce sont des défauts qu'un spectateur remarque, ou des pièges techniques. Tout ce qui est une question de goût (rythme des coupes, longueur des pauses, cadrages, zooms, bruitages, musique, mots à l'écran, couleurs, polices, types de visuels) vient UNIQUEMENT du style du créateur (`looks/<son-style>/look.json`), créé avec le skill `style-de-montage`. Jamais d'un autre créateur, jamais d'une valeur par défaut inventée.
+Ces règles valent pour toutes les vidéos, quel que soit le créateur. Ce ne sont pas des goûts : ce sont des défauts qu'un spectateur remarque, ou des pièges techniques. Tout ce qui est une question de goût (rythme des coupes, longueur des pauses, cadrages, zooms, bruitages, musique, mots à l'écran, couleurs, polices, types de visuels) vient UNIQUEMENT du style du créateur (`looks/<son-style>/look.json`), créé avec le skill `create-style`. Jamais d'un autre créateur, jamais d'une valeur par défaut inventée.
 
 ## Dérush
 

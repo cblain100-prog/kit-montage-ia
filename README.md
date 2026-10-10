@@ -25,14 +25,14 @@ Il clone ce dépôt, installe ce qui manque (ffmpeg, Python, Node, le connecteur
 Puis, une seule fois, dans Premiere Pro :
 
 1. **Premiere Pro > Réglages > Plug-ins** : coche « Activer le mode développeur », puis quitte et relance Premiere.
-2. **Fenêtre > Extensions > MCP Bridge (CEP)** : Temp Directory = `/tmp/premiere-mcp-bridge`, « Save Configuration », puis **Start Bridge**.
+2. **Fenêtre > Extensions > MCP Bridge (CEP)** : le pont démarre tout seul à l'ouverture du panneau. Vérifie juste que Temp Directory = `/tmp/premiere-mcp-bridge` (sinon corrige-le et « Save Configuration ») ; si le panneau affiche « Stopped », clique « Start Bridge ».
 
-À chaque montage, Premiere doit être ouvert avec le panneau MCP Bridge sur « Start Bridge ».
+À chaque montage, Premiere doit être ouvert avec le panneau MCP Bridge ouvert. Si le pont ne répond pas, le kit livre quand même la vidéo (ffmpeg) et un fichier XML de la timeline : dans Premiere, Fichier > Importer, et tu as ton projet à retoucher.
 
 ## Utiliser
 
-1. **Ton style d'abord, une seule fois** : dis à Claude Code « crée mon style de montage » (skill `style-de-montage`). Le kit n'a aucun style à lui : tout vient de toi. Il te demande une vidéo montée dont tu aimes le rendu (la tienne ou une autre), ton site ou ta charte, puis il te montre une de tes phrases montée de plusieurs façons (A, B, C) pour les cadrages, le rythme, les zooms, les bruitages, la musique et les mots à l'écran. Tu réponds par une lettre, ou « la B, mais parfois la C ». Il écrit ton fichier de style. Sans lui, le montage ne démarre pas.
-2. **Chaque vidéo** : dis « monte ma vidéo » (skill `montage-youtube`). Il te demande où sont tes vidéos, applique ton style et les règles de qualité du kit ([rules/qualite.md](rules/qualite.md) : pas de fin de mot coupée, pas d'image qui flashe, rien de privé à l'écran, volume aux normes de YouTube...), fait vérifier la vidéo par une équipe d'agents, puis t'ouvre le studio.
+1. **Ton style d'abord, une seule fois** : dis à Claude Code « crée mon style de montage » (skill `create-style`). Le kit n'a aucun style à lui : tout vient de toi. Il te demande une vidéo montée dont tu aimes le rendu (la tienne ou une autre), ton site ou ta charte, puis il te montre une de tes phrases montée de plusieurs façons (A, B, C) pour les cadrages, le rythme, les zooms, les bruitages, la musique et les mots à l'écran. Tu réponds par une lettre, ou « la B, mais parfois la C ». Il écrit ton fichier de style. Sans lui, le montage ne démarre pas.
+2. **Chaque vidéo** : dis « monte ma vidéo » (skill `montage`). Il te demande où sont tes vidéos, applique ton style et les règles de qualité du kit ([rules/qualite.md](rules/qualite.md) : pas de fin de mot coupée, pas d'image qui flashe, rien de privé à l'écran, volume aux normes de YouTube...), fait vérifier la vidéo par une équipe d'agents, puis t'ouvre le studio.
 3. **Le studio** : touche C pour commenter à l'instant précis, la timeline sous la vidéo pour couper (S, Suppr, Cmd+Z), l'onglet Musique pour régler le volume, et « Reconstruire » pour la version suivante.
 
 Une première version complète prend du temps : environ 30 à 40 minutes pour les animations, 25 minutes de montage machine, 15 minutes de vérification.
@@ -48,6 +48,17 @@ Une première version complète prend du temps : environ 30 à 40 minutes pour l
 
 Aucune musique n'est livrée dans le dépôt (chaque morceau a sa licence). Le kit sait télécharger des morceaux libres de Kevin MacLeod (gratuit avec une ligne de crédit dans ta description, que le kit te redonne à chaque montage), et tu peux ajouter tes propres morceaux (Mixkit, Pixabay, etc.). Les bruitages sont fabriqués par le kit : ils sont à toi. Détails : [assets/README.md](assets/README.md).
 
+## Le connecteur Premiere et ta sécurité
+
+Le kit pilote Premiere avec un connecteur libre ([Adobe_Premiere_Pro_MCP](https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP), version 1.2.8). Il a été audité : pas de logiciel malveillant, mais quelques réglages risqués par défaut. L'installation du kit les verrouille :
+
+- il est installé depuis une version précise du code source, jamais depuis npm ni « la dernière version » ;
+- le dossier d'échange avec Premiere (`/tmp/premiere-mcp-bridge`) est réservé à ton compte : le panneau exécute toute commande déposée dedans ;
+- l'envoi de statistiques d'usage et la vérification de mises à jour sont coupés (`~/.premiere-mcp-bridge/config.json` et les réglages du connecteur) ;
+- trois outils du connecteur sont **interdits à Claude** dans `~/.claude/settings.json` (une copie de sauvegarde est faite avant, rien d'autre n'est modifié) : `execute_extendscript` (il exécute n'importe quel script dans Premiere, avec accès à tes fichiers), `delete_preview_files` (il efface les fichiers de n'importe quel dossier) et `invoke_tool` (il permettrait de contourner les deux premiers). Les scripts du kit, eux, utilisent encore `execute_extendscript` pour poser des centaines d'images-clés d'un coup, mais avec des scripts écrits dans le kit et envoyés par son propre programme (`premiere/ppbatch.py`), pas par Claude.
+
+Pour tout enlever : `bash scripts/uninstall-premiere.sh`. Il retire le connecteur de Claude Code, les trois interdictions, le panneau de Premiere, et remet le « mode développeur » des extensions Adobe (`PlayerDebugMode`) comme avant : ce mode autorise Premiere à charger n'importe quelle extension non signée, l'installation l'active pour le panneau du connecteur (`--keep-debug-mode` pour le laisser si une autre extension en a besoin).
+
 ## Tes données
 
 Tes rushes, tes transcriptions, tes montages et ton style restent sur ton Mac : le dossier `projects/` et ton style ne partent jamais sur GitHub. Le kit n'utilise aucune clé d'API : il passe par ton abonnement Claude Code.
@@ -56,7 +67,7 @@ Tes rushes, tes transcriptions, tes montages et ton style restent sur ton Mac : 
 
 - Un ou deux téléphones, vidéo YouTube 16:9 où tu parles face caméra.
 - Mac uniquement.
-- Premiere Pro pour le montage final (sinon ffmpeg en secours).
+- Premiere Pro pour le montage final (sinon ffmpeg en secours, plus un fichier XML à importer dans Premiere).
 - Pas encore : DaVinci Resolve, CapCut, Windows, les reels verticaux.
 
 ## Crédits et licence

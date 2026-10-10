@@ -33,7 +33,7 @@ if not pal:
     raise SystemExit("no music in the style's palette (or the files are missing) : the video is made without music")
 intro, body = mu.get("intro") or {}, mu.get("body") or {}
 if intro.get("under_lu") is None and body.get("under_lu") is None:
-    raise SystemExit("the style has tracks but no level (music.intro.under_lu / music.body.under_lu) : finish the style with the style-de-montage skill")
+    raise SystemExit("the style has tracks but no level (music.intro.under_lu / music.body.under_lu) : finish the style with the create-style skill")
 lu_intro = intro.get("under_lu", body.get("under_lu"))
 lu_body = body.get("under_lu", lu_intro)
 times = json.load(open(PR.P(A.slug, "work", "insert-times.json")))

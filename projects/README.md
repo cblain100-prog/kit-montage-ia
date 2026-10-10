@@ -15,4 +15,4 @@ projects/<slug>/
 
 `plan.exemple.json` montre un plan complet, champ par champ (les clés `_doc` sont des explications, le moteur les ignore).
 
-Les dossiers `style-<nom>/` (extrait pour les vidéos de choix) et `_styles/<nom>/` (analyse de ta vidéo) viennent du skill `style-de-montage`.
+Les dossiers `style-<nom>/` (extrait pour les vidéos de choix) et `_styles/<nom>/` (analyse de ta vidéo) viennent du skill `create-style`.

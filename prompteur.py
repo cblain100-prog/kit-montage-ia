@@ -353,7 +353,7 @@ def angle_filter(plan, ang):
         return "scale=1920:1080:flags=lanczos"
     z = plan.get("zoom", {}).get(ang)
     if not z:
-        raise SystemExit(f"framing {ang} has no zoom factor in plan.zoom : the creator's style (looks/<name>/look.json, framing) must give it ; run the style-de-montage skill")
+        raise SystemExit(f"framing {ang} has no zoom factor in plan.zoom : the creator's style (looks/<name>/look.json, framing) must give it ; run the create-style skill")
     cw, chh = int(src_w / z) // 2 * 2, int(src_h / z) // 2 * 2
     # plan.crop_x_min {cam: px} keeps an edge object (a mirror, a lamp) out of the tight shot
     x = min(max(int(fx * src_w - cw / 2), plan.get("crop_x_min", {}).get(cam, 0)), src_w - cw)
@@ -659,7 +659,7 @@ def sfx_cues(slug, plan, times, dur):
 
 
 def load_look(plan):
-    """plan.look = a folder of looks/ (the creator's style, chosen once with the « style-de-montage » skill on choice
+    """plan.look = a folder of looks/ (the creator's style, chosen once with the « create-style » skill on choice
     videos, then applied, never reinvented)."""
     return json.load(open(os.path.join(HERE, "looks", plan["look"], "look.json"))) if plan.get("look") else None
 

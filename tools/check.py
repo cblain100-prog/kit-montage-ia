@@ -53,25 +53,41 @@ line(os.path.exists(os.path.join(HERE, "tools", "bin", "facebox")), "détecteur 
 r = run(["npx", "--yes", "hyperframes@0.8.103", "--version"])
 line(bool(r and r.returncode == 0), "HyperFrames 0.8.103", "npx --yes hyperframes@0.8.103 --version (connexion internet)")
 kd = os.path.expanduser("~/.config/kit-montage-ia/kit_dir")
-line(os.path.exists(kd) and open(kd).read().strip() == HERE, "emplacement du kit enregistré", "scripts/install.sh", required=False)
-for s in ("style-de-montage", "montage-youtube"):
+line(os.path.exists(kd) and open(kd).read().strip() == HERE, "emplacement du kit enregistré", "scripts/install.sh --no-premiere", required=False)
+for s in ("create-style", "montage"):
     p = os.path.expanduser(f"~/.claude/skills/{s}/SKILL.md")
-    line(os.path.exists(p), f"skill {s}", "scripts/install.sh (ou copie skills/ dans .claude/skills du projet)", required=False)
+    line(os.path.exists(p), f"skill {s}", "scripts/install.sh --no-premiere", required=False)
 for a in sorted(glob.glob(os.path.join(HERE, "agents", "*.md"))):
-    line(os.path.exists(os.path.expanduser(f"~/.claude/agents/{os.path.basename(a)}")), f"agent {os.path.basename(a)[:-3]}", "scripts/install.sh", required=False)
+    line(os.path.exists(os.path.expanduser(f"~/.claude/agents/{os.path.basename(a)}")), f"agent {os.path.basename(a)[:-3]}", "scripts/install.sh --no-premiere", required=False)
 mine = __import__("montage").personal_looks()
-line(bool(mine), "style perso : " + (", ".join(mine) if mine else "aucun"), "skill style-de-montage (obligatoire avant le premier montage)", required=False)
+line(bool(mine), "style perso : " + (", ".join(mine) if mine else "aucun"), "skill create-style (obligatoire avant le premier montage)", required=False)
 # Premiere
 import paths
 app = paths.app()
 line(bool(app), f"Premiere Pro ({os.path.basename(app) if app else 'absent'})", "installe Premiere Pro et Media Encoder avec Creative Cloud", required=False)
 line(bool(glob.glob("/Applications/Adobe Media Encoder *")), "Media Encoder", "installe Media Encoder avec Creative Cloud", required=False)
-line(os.path.exists(os.path.join(HERE, "vendor", "premiere-mcp", "dist", "index.js")), "connecteur Premiere (vendor/premiere-mcp)", "scripts/install-premiere.sh", required=False)
+vend = os.path.join(HERE, "vendor", "premiere-mcp")
+r = run(["git", "-C", vend, "rev-parse", "HEAD"]) if os.path.isdir(vend) else None
+line(os.path.exists(os.path.join(vend, "dist", "index.js")) and bool(r and r.stdout.startswith("f5e95e30")),
+     "connecteur Premiere 1.2.8 (vendor/premiere-mcp)", "scripts/install-premiere.sh", required=False)
+bd = "/tmp/premiere-mcp-bridge"
+line(os.path.isdir(bd) and os.stat(bd).st_uid == os.getuid() and (os.stat(bd).st_mode & 0o077) == 0, "dossier du pont privé (/tmp/premiere-mcp-bridge en 700)", "scripts/install-premiere.sh", required=False)
+try:
+    cfg = json.load(open(os.path.expanduser("~/.premiere-mcp-bridge/config.json")))
+except Exception:
+    cfg = {}
+line(cfg.get("telemetry") is False and cfg.get("updateCheck") is False, "télémétrie et vérification de mise à jour du connecteur coupées", "scripts/install-premiere.sh", required=False)
+try:
+    deny = json.load(open(os.path.expanduser("~/.claude/settings.json"))).get("permissions", {}).get("deny", [])
+except Exception:
+    deny = []
+need = ["mcp__premiere-pro__execute_extendscript", "mcp__premiere-pro__delete_preview_files", "mcp__premiere-pro__invoke_tool"]
+line(all(d in deny for d in need), "outils risqués du connecteur interdits à Claude (settings.json)", "scripts/install-premiere.sh", required=False)
 line(os.path.isdir(os.path.expanduser("~/Library/Application Support/Adobe/CEP/extensions/MCPBridgeCEP")), "panneau MCP Bridge dans Premiere", "scripts/install-premiere.sh", required=False)
 r = run(["claude", "mcp", "get", "premiere-pro"]) if shutil.which("claude") else None
 line(bool(r and r.returncode == 0), "connecteur déclaré dans Claude Code (premiere-pro)", "scripts/install-premiere.sh", required=False)
 age = paths.heartbeat_age()
-line(age is not None and age < 60, "pont Premiere actif" + (f" (dernier signe il y a {int(age)} s)" if age is not None else ""),
-     "Premiere ouvert, Fenêtre > Extensions > MCP Bridge (CEP) > Start Bridge (sinon le montage passe par ffmpeg)", required=False)
+line(age is not None and age < 60, "pont Premiere en marche" + (f" (dernier signe il y a {int(age)} s)" if age is not None else ""),
+     "Premiere ouvert avec le panneau Fenêtre > Extensions > MCP Bridge (CEP) ouvert, il démarre seul ; sinon « Start Bridge » (sans pont : ffmpeg + fichier XML pour Premiere)", required=False)
 print("\n" + ("Tout ce qui est requis est là." if not bad else f"{bad} élément(s) requis manquant(s)."))
 sys.exit(1 if bad else 0)
