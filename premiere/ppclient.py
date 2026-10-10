@@ -1,5 +1,5 @@
-"""Drive Premiere Pro from Python through the Premiere Pro MCP connector (vendor/premiere-mcp, installed by scripts/install-premiere.sh) over stdio.
-Premiere must be open with a saved project and Window > Extensions > MCP Bridge (CEP) > Start Bridge.
+"""Drive Premiere Pro from Python through the Premiere Pro MCP connector (vendor/premiere-mcp, release 1.2.8, installed by scripts/install-premiere.sh) over stdio.
+Premiere must be open with Window > Extensions > MCP Bridge (CEP) open (the bridge starts with the panel since 1.2.6).
   from ppclient import PP; pp = PP(); pp("get_project_info")"""
 import json, os, subprocess
 
@@ -10,7 +10,9 @@ class PP:
     def __init__(self):
         if not os.path.exists(SERVER):
             raise SystemExit("Premiere connector missing : run scripts/install-premiere.sh")
-        env = dict(os.environ, PREMIERE_TEMP_DIR="/tmp/premiere-mcp-bridge", PREMIERE_MCP_TELEMETRY="0")
+        # TOOLSET=full : since 1.2.6 tools/list only advertises 5 tools otherwise, and this client calls tools by name
+        env = dict(os.environ, PREMIERE_TEMP_DIR="/tmp/premiere-mcp-bridge", PREMIERE_MCP_TELEMETRY="0", DO_NOT_TRACK="1",
+                   PREMIERE_MCP_UPDATE_CHECK="0", PREMIERE_MCP_TOOLSET="full")
         self.p = subprocess.Popen(["node", SERVER], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env, text=True)
         self.i = 0
         self._rpc("initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "kit-montage-ia", "version": "1"}})

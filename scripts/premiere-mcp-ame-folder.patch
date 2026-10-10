@@ -1,8 +1,8 @@
 diff --git a/src/bridge/index.ts b/src/bridge/index.ts
-index e2c4e8c..fc96515 100644
+index f39777b..8ff5449 100644
 --- a/src/bridge/index.ts
 +++ b/src/bridge/index.ts
-@@ -1594,7 +1594,7 @@ export class PremiereProBridge implements PremiereProTransport {
+@@ -2128,7 +2128,7 @@ export class PremiereProBridge implements PremiereProTransport {
        const applications = '/Applications';
        try {
          const entries = await fs.readdir(applications);

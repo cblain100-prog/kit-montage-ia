@@ -1,6 +1,6 @@
 """Build the whole edit as a Premiere Pro timeline, through the Premiere MCP connector (Premiere does the montage).
   python3 premiere/build_timeline.py <slug> --name <slug>-vN [--export] [--until S] [--project path.prproj]
-Premiere must be open, with Window > Extensions > MCP Bridge (CEP) > Start Bridge. A NEW Premiere project is created for
+Premiere must be open with Window > Extensions > MCP Bridge (CEP) open (the bridge starts with the panel). A NEW Premiere project is created for
 every version (projects/<slug>/premiere/<name>.prproj by default) : one project that piles up imports ends up not answering.
 The Python engine only prepares the material (prompteur.py cut/base/inserts : framed face pieces, HyperFrames inserts, chosen sounds).
 Premiere holds the edit :
@@ -151,8 +151,8 @@ def main():
     A.name = A.name or f"montage-{slug}"
     age = paths.heartbeat_age()
     if age is None or age > 60:
-        raise SystemExit("Premiere's MCP Bridge is not running (open Premiere, Window > Extensions > MCP Bridge (CEP) > Start Bridge). "
-                         "Fallback without Premiere : tools/look_ffmpeg.py <slug> then prompteur.py compose <slug> <name>")
+        raise SystemExit("Premiere's MCP Bridge is not running (open Premiere and Window > Extensions > MCP Bridge (CEP) ; « Start Bridge » if it shows Stopped). "
+                         "Fallback without Premiere : tools/look_ffmpeg.py <slug>, prompteur.py compose <slug> <name>, tools/export_xml.py <slug> <name>")
     plan, W = PR.load_plan(slug), PR.P(slug, "work")
     times = json.load(open(f"{W}/insert-times.json"))
     plan["inserts"] = [i for i in plan["inserts"] if i["id"] in times]
