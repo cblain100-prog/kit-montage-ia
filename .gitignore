@@ -16,7 +16,7 @@ projects/*
 !projects/README.md
 !projects/plan.exemple.json
 looks/*
-!looks/exemple/
+!looks/_modele/
 renders/
 *.mov
 *.MOV

@@ -1,0 +1,86 @@
+{
+  "_doc": "Structure of a creator's style. Copied to looks/<name>/look.json and filled ONLY by the « style-de-montage » skill, from the creator's own answers : their edited video (or a reference video whose editing they like, measured by tools/analyse_style.py), their brand, and their picks on A/B/C choice videos. Every empty value means « not chosen yet » : the engine then does the neutral thing (no zoom, no sound effect, no music, no keyword). Each chosen value carries a _why with the creator's answer and the date.",
+  "name": null,
+  "brand": {
+    "accent": null,
+    "background": null,
+    "title_family": null,
+    "fonts": [],
+    "logo": null,
+    "site": null,
+    "_doc": "Asked at step 2 (site, landing page, or colours / fonts / logo). accent = colour of the strong word and of the numbered cards ; background = full-screen visuals ; title_family = font of keywords and titles (a family of assets/fonts, or added in fonts : [{\"family\", \"file\", \"weight\"}] with its licence file)."
+  },
+  "framing": {
+    "one_camera": {
+      "cycle": null,
+      "zoom": {},
+      "first": null
+    },
+    "two_cameras": {
+      "cycle": null,
+      "zoom": {},
+      "first": null,
+      "crop_x_min": {}
+    },
+    "_doc": "Framings a cut alternates between. Names : A / B = whole picture of camera A (front) / B (side), At / Bt = tight, Att / Btt = very tight ; zoom = crop factor of each tight framing. Asked with the « cadrages » choice video (one fixed framing / two / three)."
+  },
+  "cut": {
+    "max_pause": null,
+    "pause_keep": null,
+    "min_shot": null,
+    "max_shot": null,
+    "shot_target": null,
+    "cam_hold": null,
+    "intro_cam_hold": null,
+    "_doc": "Rhythm. max_pause : a silence longer than this inside a sentence is shortened to pause_keep. shot_target / min_shot / max_shot : a long sentence is split into shots of about shot_target s. cam_hold {\"A\": s, \"B\": s} : with two phones, the camera only changes after it has been seen this long. Measured on the creator's video, or asked with the « rythme » choice video."
+  },
+  "zoom": {
+    "default": {
+      "from": 100,
+      "to": 100,
+      "alternate": false
+    },
+    "accent": {
+      "enabled": false,
+      "from": 100,
+      "to": 100,
+      "dur": 0.27,
+      "lead": 0.05
+    },
+    "dezoom": {
+      "enabled": false,
+      "from": 100,
+      "to": 100,
+      "dur": 0.45
+    },
+    "accent_words": "",
+    "_doc": "Zooms inside a shot (100 = none). default : slow push from -> to over every shot (alternate : one shot in, the next out). accent : quick eased zoom on a strong word. dezoom : quick zoom out at the start of a shot. Asked with the « zooms » choice video (none / light / strong)."
+  },
+  "sound": {
+    "cues": [],
+    "insert_sounds": false,
+    "levels": {},
+    "_doc": "Sound effects : cues [{\"on\": \"keyword or icon pop\" | \"visual entrance\" | \"every face cut\", \"file\": \"<assets/sfx file>\", \"db\": -22, \"lead\": 0.1}]. Empty = no sound effect. Asked with the « sons » choice video (none / soft / marked). insert_sounds : the small sounds built into some visuals (typing, pops of a list), false = silent."
+  },
+  "music": {
+    "palette": [],
+    "intro": {
+      "under_lu": null,
+      "open": null,
+      "close": null
+    },
+    "body": {
+      "under_lu": null
+    },
+    "change_on_chapter": false,
+    "outro": null,
+    "refused": [],
+    "_doc": "palette [{file, name, good_from, credit}] = the tracks the creator chose (tools/musique.py palette). under_lu = how many LU the music sits under the voice (intro, then body). open {riser, impact, start_hit} / close (a sound file ending the intro) / change_on_chapter / outro {fade} : only if the creator chose them. Empty palette = no music. Asked with the « musique » choice video (3 different moods)."
+  },
+  "keywords": {
+    "style": null,
+    "frequency": null,
+    "_doc": "Words on screen : \"none\", \"simple\" (white, light) or \"gras\" (heavy capitals, strong word in the accent colour). Always the speaker's own words. Asked with the « mots » choice video."
+  },
+  "rules": []
+}
