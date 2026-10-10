@@ -19,14 +19,14 @@ Aucune musique n'est livrée (chaque morceau a sa licence). `tools/musique.py` t
 
 ```bash
 .venv/bin/python tools/musique.py list                 # le catalogue et ce que tu as déjà
-.venv/bin/python tools/musique.py get sombre           # télécharge des morceaux de Kevin MacLeod
+.venv/bin/python tools/musique.py get trio             # un morceau de Kevin MacLeod par ambiance (calme, énergique, tension)
 .venv/bin/python tools/musique.py add ~/Downloads/morceau.mp3 --credit "..."   # un morceau à toi
 .venv/bin/python tools/musique.py palette <ton-style> fichier1.mp3 fichier2.mp3  # les met dans ton style
 ```
 
 Sources gratuites :
 
-- **Kevin MacLeod** (incompetech.com), licence Creative Commons BY 4.0 : gratuit à condition de mettre la ligne de crédit dans la description YouTube. Exemple : `"Stormfront" Kevin MacLeod (incompetech.com) Licensed under Creative Commons: By Attribution 4.0 License http://creativecommons.org/licenses/by/4.0/`. Le kit garde la ligne de chaque morceau dans `music/CREDITS.json` et te la redonne à chaque montage.
+- **Kevin MacLeod** (incompetech.com), licence Creative Commons BY 4.0 : gratuit à condition de mettre la ligne de crédit dans la description YouTube. Exemple : `"Lightless Dawn" Kevin MacLeod (incompetech.com) Licensed under Creative Commons: By Attribution 4.0 License http://creativecommons.org/licenses/by/4.0/`. Le kit garde la ligne de chaque morceau dans `music/CREDITS.json` et te la redonne à chaque montage.
 - **Mixkit**, musiques gratuites sans crédit : https://mixkit.co/free-stock-music/ (licence : https://mixkit.co/license/)
 - **Pixabay**, musiques gratuites sans crédit : https://pixabay.com/music/ ; quelques morceaux sont déclarés dans Content ID par leur auteur : publie d'abord en non répertorié pour vérifier qu'aucune réclamation n'arrive.
 - **YouTube Audio Library** (dans YouTube Studio > Bibliothèque audio) : sûre pour YouTube, certaines pistes demandent un crédit.

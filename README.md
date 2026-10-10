@@ -20,7 +20,7 @@ Ouvre Claude Code et dis-lui :
 
 > Installe le kit de montage : https://github.com/cblain100-prog/kit-montage-ia
 
-Il clone ce dépôt, installe ce qui manque (ffmpeg, Python, Node, le connecteur Premiere, les polices, des bruitages, de quoi récupérer des musiques libres) et vérifie que tout marche. Compte une dizaine de minutes. Il te demandera peut-être de coller une ligne dans le Terminal (pour Homebrew, qui demande ton mot de passe de Mac).
+Il clone ce dépôt, installe ce qui manque (ffmpeg, Python, Node, le connecteur Premiere, les polices, des bruitages, de quoi récupérer des musiques libres, les deux skills et les agents de vérification) et vérifie que tout marche. Compte une dizaine de minutes. Il te demandera peut-être de coller une ligne dans le Terminal (pour Homebrew, qui demande ton mot de passe de Mac).
 
 Puis, une seule fois, dans Premiere Pro :
 
@@ -31,8 +31,8 @@ Puis, une seule fois, dans Premiere Pro :
 
 ## Utiliser
 
-1. **Ton style, une seule fois** : dis à Claude Code « crée mon style de montage » (skill `style-de-montage`). Il te demande une vidéo à toi déjà montée (s'il y en a une), ton site ou ta charte, puis il te montre la même phrase montée de plusieurs façons (A, B, C) pour les zooms, les bruitages, la musique et les mots à l'écran. Tu réponds par une lettre, ou « la B, mais parfois la C ». Il écrit ton fichier de style.
-2. **Chaque vidéo** : dis « monte ma vidéo » (skill `montage-youtube`). Il te demande où sont tes vidéos, puis il fait tout le reste et t'ouvre le studio.
+1. **Ton style d'abord, une seule fois** : dis à Claude Code « crée mon style de montage » (skill `style-de-montage`). Le kit n'a aucun style à lui : tout vient de toi. Il te demande une vidéo montée dont tu aimes le rendu (la tienne ou une autre), ton site ou ta charte, puis il te montre une de tes phrases montée de plusieurs façons (A, B, C) pour les cadrages, le rythme, les zooms, les bruitages, la musique et les mots à l'écran. Tu réponds par une lettre, ou « la B, mais parfois la C ». Il écrit ton fichier de style. Sans lui, le montage ne démarre pas.
+2. **Chaque vidéo** : dis « monte ma vidéo » (skill `montage-youtube`). Il te demande où sont tes vidéos, applique ton style et les règles de qualité du kit ([rules/qualite.md](rules/qualite.md) : pas de fin de mot coupée, pas d'image qui flashe, rien de privé à l'écran, volume aux normes de YouTube...), fait vérifier la vidéo par une équipe d'agents, puis t'ouvre le studio.
 3. **Le studio** : touche C pour commenter à l'instant précis, la timeline sous la vidéo pour couper (S, Suppr, Cmd+Z), l'onglet Musique pour régler le volume, et « Reconstruire » pour la version suivante.
 
 Une première version complète prend du temps : environ 30 à 40 minutes pour les animations, 25 minutes de montage machine, 15 minutes de vérification.

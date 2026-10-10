@@ -12,15 +12,15 @@ A montage kit for YouTube talking-head videos (16:9, read at the teleprompter or
    - `assets/sfx/*.wav` (original sound effects synthesised by `tools/make_sfx.py`).
    - `tools/bin/facebox` (face finder on Apple Vision, compiled with swiftc ; if swiftc is missing : `xcode-select --install`).
    - HyperFrames 0.8.103 through npx (pinned).
-   - The two skills, symlinked into `~/.claude/skills/` (`style-de-montage`, `montage-youtube`), and the kit path in `~/.config/kit-montage-ia/kit_dir` (the skills read it). Use `--skills-dir <project>/.claude/skills` to install them for one project only, `--no-skills` to skip.
+   - The two skills, symlinked into `~/.claude/skills/` (`style-de-montage`, `montage-youtube`), the seven agents of `agents/` copied into `~/.claude/agents/` (an existing file is never overwritten ; `--agents-dir` to change the folder), and the kit path in `~/.config/kit-montage-ia/kit_dir` (skills and agents read it). Use `--skills-dir <project>/.claude/skills` to install them for one project only, `--no-skills` to skip.
    - The Premiere connector, when Premiere Pro is installed : `scripts/install-premiere.sh` clones https://github.com/hetpatel-11/Adobe_Premiere_Pro_MCP at commit `12684e37297a702265985dffa7d33629d28074f4` into `vendor/premiere-mcp`, applies `scripts/premiere-mcp-ame-folder.patch`, builds it, enables CEP debug mode, copies the Premiere panel to `~/Library/Application Support/Adobe/CEP/extensions/MCPBridgeCEP`, creates `/tmp/premiere-mcp-bridge`, and registers it in Claude Code : `claude mcp add premiere-pro -s user -e PREMIERE_TEMP_DIR=/tmp/premiere-mcp-bridge -e PREMIERE_MCP_TELEMETRY=0 -- node <kit>/vendor/premiere-mcp/dist/index.js` (an existing `premiere-pro` entry is kept unless `--force-register`).
 3. Verify : `~/kit-montage-ia/.venv/bin/python ~/kit-montage-ia/tools/check.py`. Every « MANQUE » line names its fix. « ATTENTION » lines are optional (music not downloaded yet, Premiere bridge not started).
 4. Tell the user the two settings to make once in Premiere Pro (in French) :
    - Premiere Pro > Réglages > Plug-ins : cocher « Activer le mode développeur », puis quitter et relancer Premiere.
    - Fenêtre > Extensions > MCP Bridge (CEP) : Temp Directory = `/tmp/premiere-mcp-bridge`, « Save Configuration », puis « Start Bridge ».
-5. Restart note : skills added during the session appear after Claude Code restarts (or `/skills` reload). Then suggest the first step : « crée mon style de montage ».
+5. Restart note : skills and agents added during the session appear after Claude Code restarts. Then the first step is always « crée mon style de montage ».
 
-The repo is also a Claude Code plugin (`.claude-plugin/`) : `claude plugin marketplace add cblain100-prog/kit-montage-ia` then `claude plugin install kit-montage-ia@kit-montage-ia`. The plugin only brings the skills ; the skills still clone and install the kit in `~/kit-montage-ia` (never keep projects in the plugin cache).
+The repo is also a Claude Code plugin (`.claude-plugin/`) : `claude plugin marketplace add cblain100-prog/kit-montage-ia` then `claude plugin install kit-montage-ia@kit-montage-ia`. The plugin brings the skills and the agents ; the skills still clone and install the kit in `~/kit-montage-ia` (never keep projects in the plugin cache).
 
 ## Layout
 
@@ -35,8 +35,10 @@ tools/                projet.py (new project from 1 or 2 videos : sync, faces, v
                       qa_pack.py, flashes.py, analyse_style.py, choix.py (A/B/C choice videos), check.py, facebox.swift
 premiere/             build_timeline.py (whole timeline + export), apply_look.py (zoom keys), ppclient.py, ppbatch.py, paths.py, zoom_variants.py
 review/               the studio : serve.py, montage_api.py, index.html, rebuild.sh (full rebuild, Premiere or ffmpeg fallback)
-looks/exemple/        the starting style ; the user's style is looks/<name>/look.json (git-ignored)
-skills/               style-de-montage (once), montage-youtube (each video)
+looks/_modele/        the empty structure of a style ; the user's style is looks/<name>/look.json (git-ignored), built by style-de-montage
+rules/qualite.md      universal quality rules (not taste) applied to every video
+agents/               kit-montage-coupes, -redites, -visuels, -spectateur, -sceptique, -chef (verification), -animateur (animations)
+skills/               style-de-montage (once, ALWAYS first), montage-youtube (each video, refuses to start without a personal style)
 projects/             one folder per video (git-ignored) ; plan.exemple.json documents every field
 assets/               fonts (OFL, shipped), sfx and music (generated or downloaded, git-ignored)
 ```
@@ -47,7 +49,8 @@ Always run Python through the kit's venv : `cd <kit> && .venv/bin/python ...`.
 
 - The skills are the procedure : follow `skills/montage-youtube/SKILL.md` and `skills/style-de-montage/SKILL.md`.
 - Never commit or upload the user's videos, transcripts, projects, looks or `kit.config.json`.
-- Never suggest copying another creator's edit : the style comes from the user's own video, brand and choices.
+- Order : the creator's style first (style-de-montage), then the montage. Every taste value (rhythm, pauses, framings, zooms, sound effects, music, words on screen, colours, fonts) comes only from their style ; an empty value means the effect is not used. The kit ships no style values of its own, and never names or reproduces a specific creator.
+- Universal quality rules (`rules/qualite.md`) apply to every video ; they are not taste.
 - No music or sound effect file is ever added to the repository (licences).
 - Change the engine only for rules that apply to every video ; per-video choices go in `projects/<slug>/plan.json`, per-creator choices in `looks/<name>/look.json`.
 - After editing any Python file, check the syntax (`.venv/bin/python -c "import ast; ast.parse(open('f.py').read())"`) before a long run.

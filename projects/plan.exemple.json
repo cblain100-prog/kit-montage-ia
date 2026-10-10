@@ -2,40 +2,156 @@
  "_doc": "Plan of one video. Written by tools/projet.py (cameras, sync, framing) then by Claude (keep, inserts, sfx) and tools/music_plan.py (music). Times are seconds of the voice camera's rush ; an anchor \"mot@12.3\" is the spoken word nearest 12.3 s (punctuation and apostrophes ignored), \"src:12.34\" an exact rush time.",
  "title": "Mon titre de vidéo",
  "language": "fr",
- "look": "exemple",
- "cameras": ["A", "B"],
+ "look": "ma-marque",
+ "cameras": [
+  "A",
+  "B"
+ ],
  "voice_cam": "B",
- "offsets": {"B": 0.0, "A": 1.497},
- "sizes": {"A": [3840, 2160], "B": [3840, 2160]},
- "faces": {"A": [0.515, 0.523], "B": [0.492, 0.461]},
+ "offsets": {
+  "B": 0.0,
+  "A": 1.497
+ },
+ "sizes": {
+  "A": [
+   3840,
+   2160
+  ],
+  "B": [
+   3840,
+   2160
+  ]
+ },
+ "faces": {
+  "A": [
+   0.515,
+   0.523
+  ],
+  "B": [
+   0.492,
+   0.461
+  ]
+ },
  "_doc_cameras": "One phone : cameras [\"A\"], voice_cam \"A\", offsets {\"A\": 0}, framings [\"A\", \"At\", \"Att\"]. faces = centre of the face (0..1) for the tight crops.",
- "framings": ["At", "A", "Bt", "At", "A", "Btt"],
- "zoom": {"At": 1.15, "Bt": 1.3, "Btt": 1.5},
- "first_angle": "At",
- "cam_hold": {"A": 5.5, "B": 3.0},
- "intro_cam_hold": 3.0,
- "intro_until": 45,
- "lock_angle_from": [612.0, "A"],
+ "framings": [
+  "A",
+  "At",
+  "B"
+ ],
+ "zoom": {
+  "At": 1.3
+ },
+ "first_angle": "A",
+ "cam_hold": {
+  "A": 4.0,
+  "B": 2.0
+ },
+ "lock_angle_from": [
+  612.0,
+  "A"
+ ],
  "_doc_lock": "From that rush time on, one framing only (the goodbye seen face on). Optional.",
- "tail_keep": 0.28,
- "edge_keep": 0.12,
- "max_pause": 0.45,
- "pause_keep": 0.38,
- "whisper_prompt": "Claude Code, Premiere Pro, HyperFrames, mon prénom",
+ "max_pause": 0.6,
+ "pause_keep": 0.45,
+ "whisper_prompt": "les noms propres et le jargon de la vidéo",
  "keep": [
-  ["Si@1.2", "trop@5.0", "the hook"],
-  ["C'est@7.4", "ligne@13.0"],
-  ["pour@14.1", "src:16.84", "cut before a swallowed word", {"strict_end": true}],
-  ["src:17.30", "début@19.9", "retake continuing the same sentence", {"join": true}],
-  ["Et@21.1", "IA@27.7"]
+  [
+   "Si@1.2",
+   "trop@5.0",
+   "the hook"
+  ],
+  [
+   "C'est@7.4",
+   "ligne@13.0"
+  ],
+  [
+   "pour@14.1",
+   "src:16.84",
+   "cut before a swallowed word",
+   {
+    "strict_end": true
+   }
+  ],
+  [
+   "src:17.30",
+   "début@19.9",
+   "retake continuing the same sentence",
+   {
+    "join": true
+   }
+  ],
+  [
+   "Et@21.1",
+   "IA@27.7"
+  ]
  ],
  "inserts": [
-  {"id": "k1", "kind": "keyword", "style": "chrome", "at": "quarantaine@23.6", "lead": -0.1, "dur": 2.2,
-   "words": [["UNE", "une@23.5"], ["QUARANTAINE", "quarantaine@23.6", "acc"]]},
-  {"id": "c1", "kind": "diamonds", "mode": "one", "n": 1, "label": "le bon modèle", "at": "technique@30.2", "lead": -0.03, "until": "modèle@31.4", "tail": 0.6, "at_n": 0.0, "at_label": 0.25, "chapter": true},
-  {"id": "d1", "kind": "doc", "at": "page@40.1", "lead": -0.15, "until": "prix@44.0", "tail": 0.3, "src": "assets/img/pricing.png", "files": ["assets/img/pricing.png"], "view": [0, 0, 1400, 700], "marks": [{"x": 120, "y": 300, "w": 500, "h": 60, "at": "200@42.5"}]}
+  {
+   "id": "k1",
+   "kind": "keyword",
+   "style": "simple",
+   "at": "quarantaine@23.6",
+   "lead": -0.1,
+   "dur": 2.2,
+   "words": [
+    [
+     "une quarantaine",
+     "quarantaine@23.6"
+    ]
+   ]
+  },
+  {
+   "id": "c1",
+   "kind": "bullets",
+   "at": "techniques@30.2",
+   "lead": -0.1,
+   "until": "modèle@33.4",
+   "tail": 0.4,
+   "title": {
+    "t": "les techniques",
+    "at": "techniques@30.2"
+   },
+   "items": [
+    {
+     "t": "le bon modèle",
+     "at": "modèle@31.4"
+    }
+   ],
+   "chapter": true
+  },
+  {
+   "id": "d1",
+   "kind": "doc",
+   "at": "page@40.1",
+   "lead": -0.15,
+   "until": "prix@44.0",
+   "tail": 0.3,
+   "src": "assets/img/pricing.png",
+   "files": [
+    "assets/img/pricing.png"
+   ],
+   "view": [
+    0,
+    0,
+    1400,
+    700
+   ],
+   "marks": [
+    {
+     "x": 120,
+     "y": 300,
+     "w": 500,
+     "h": 60,
+     "at": "200@42.5"
+    }
+   ]
+  }
  ],
- "_doc_inserts": "kind : keyword, icon, caption, nametag (over the face) ; diamonds, bullets, doc, term, still, wall, logo, ytcard, tokens, alert, scene (full screen). See the top of prompteur_blocks.py. files = images copied next to the insert.",
- "sfx": [["impact-bass-1.wav", "quarantaine@23.6", -20]],
- "_doc_music": "plan.music is written by tools/music_plan.py from the look's palette : do not write it by hand."
+ "_doc_inserts": "kind : keyword (style simple or gras, from the style), icon, caption, nametag (over the face) ; bullets, diamonds, doc, term, still, wall, logo, ytcard, tokens, alert, scene (full screen). See the top of prompteur_blocks.py. files = images copied next to the insert. chapter : true marks a chapter card (the music may change there if the style says so).",
+ "sfx": [],
+ "_doc_music": "plan.music is written by tools/music_plan.py from the look's palette : do not write it by hand.",
+ "_doc_style": "look = the creator's style (looks/<name>/look.json). tools/projet.py copies its framing and cut values here ; the values below are an imaginary creator's, not a recommendation.",
+ "shot_target": 3.5,
+ "max_shot": 4.5,
+ "min_shot": 2.0
 }
