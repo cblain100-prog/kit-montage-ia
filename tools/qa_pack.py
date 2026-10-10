@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Evidence pack for the editing agents (v3, 2026-10-02 : « des agents spécialisés qui se parlent, qui ne me redonnent
-pas un résultat tant que ce n'est pas vérifié »). Everything a checker needs, measured once, in work/qa/ :
+"""Evidence pack for the verification agents (kit-montage-*). Everything a checker needs, measured once, in work/qa/ :
 
   script.txt        the teleprompter text (what he meant to say)
   edited.txt        the edited voice, transcribed, one line per ~sentence with output times

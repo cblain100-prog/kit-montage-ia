@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Creates a montage project from one or two phone videos.
 
-  python3 tools/projet.py <slug> <front video> [<side video>] [--voix A|B] [--look exemple] [--copy] [--title "..."]
+  python3 tools/projet.py <slug> <front video> [<side video>] [--voix A|B] [--look <style>] [--copy] [--title "..."]
 
   one video   : one phone (camera A). Its sound is the voice, every cut reframes it (wide / tight / very tight).
   two videos  : the first is the FRONT camera (A, face to the lens, opens the video), the second the SIDE camera (B).
@@ -141,7 +141,7 @@ def main():
     ap.add_argument("slug")
     ap.add_argument("videos", nargs="+", help="front video, then the side video if there are two phones")
     ap.add_argument("--voix", choices=["A", "B"], help="camera that holds the microphone (default : measured)")
-    ap.add_argument("--look", default="exemple")
+    ap.add_argument("--look", help="the creator's style (looks/<name>) ; default : the only personal style, else the empty model (neutral values)")
     ap.add_argument("--copy", action="store_true", help="copy the videos into the project instead of linking them")
     ap.add_argument("--title", default="")
     ap.add_argument("--language", default="fr")
@@ -215,9 +215,18 @@ def main():
     if peak > 0.01:
         print(f"  ! the voice clips ({peak:.2f} % of samples at full scale) : microphone too close, see the skill")
     # plan skeleton from the look
+    mine = M.personal_looks()
+    if not A.look:
+        if len(mine) > 1:
+            raise SystemExit(f"several styles : {', '.join(mine)} ; choose one with --look")
+        A.look = mine[0] if mine else "_modele"
     look_f = os.path.join(HERE, "looks", A.look, "look.json")
-    look = json.load(open(look_f)) if os.path.exists(look_f) else {}
-    fr = look.get("framing", {}).get("one_camera" if len(cams) == 1 else "two_cameras", {})
+    if not os.path.exists(look_f):
+        raise SystemExit(f"no style looks/{A.look}/look.json")
+    if A.look == "_modele":
+        print("  ! no personal style yet : neutral values (no zoom, no sound effect, no music). The style-de-montage skill creates it.")
+    look = json.load(open(look_f))
+    fr = (look.get("framing") or {}).get("one_camera" if len(cams) == 1 else "two_cameras") or {}
     plan_f = M.P(A.slug, "plan.json")
     plan = json.load(open(plan_f)) if os.path.exists(plan_f) else {}
     grade = {}
@@ -229,7 +238,7 @@ def main():
                 grade[cam] = tm
             else:
                 print(f"  ! camera {cam} is HDR and this ffmpeg has no zscale : colours may look grey (brew reinstall ffmpeg)")
-    default_cycle = ["A", "At", "Att"] if len(cams) == 1 else ["At", "A", "Bt", "At", "A", "Btt"]
+    cycle = fr.get("cycle") or (["A"] if len(cams) == 1 else ["A", "B"])  # neutral : the whole picture of each camera
     plan.update({
         "title": A.title or plan.get("title", ""),
         "language": A.language,
@@ -239,18 +248,18 @@ def main():
         "offsets": offsets,
         "sizes": sizes,
         "faces": faces,
-        "framings": fr.get("cycle", default_cycle),
-        "zoom": fr.get("zoom", {"At": 1.25, "Att": 1.5} if len(cams) == 1 else {"At": 1.15, "Bt": 1.3, "Btt": 1.5}),
-        "first_angle": fr.get("first", default_cycle[0]),
+        "framings": cycle,
+        "zoom": fr.get("zoom") or {},
+        "first_angle": fr.get("first") or cycle[0],
     })
     if grade:
         plan["grade"] = grade
     if fr.get("crop_x_min"):
         plan["crop_x_min"] = fr["crop_x_min"]
-    cut = look.get("cut", {})
-    for k, v in {"cam_hold": {"A": 5.5, "B": 3.0}, "intro_cam_hold": 3.0, "tail_keep": 0.28, "edge_keep": 0.12, "max_pause": 0.45,
-                 "pause_keep": 0.38, "min_shot": 1.4, "max_shot": 3.4, "shot_target": 2.6, "min_face": 1.5}.items():
-        plan.setdefault(k, cut.get(k, v))
+    # the creator's rhythm (only the values they chose ; the engine is neutral for the others)
+    for k, v in (look.get("cut") or {}).items():
+        if not k.startswith("_") and v is not None:
+            plan[k] = v
     for k, v in {"keep": [], "inserts": [], "sfx": [], "whisper_prompt": ""}.items():
         plan.setdefault(k, v)
     json.dump(plan, open(plan_f, "w"), ensure_ascii=False, indent=1)

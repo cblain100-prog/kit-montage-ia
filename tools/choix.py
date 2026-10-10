@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """A/B/C choice videos : the SAME sentence of the creator, edited several ways, one after the other, each labelled with
-its letter. The creator answers with a letter (« la B, mais parfois la C ») and the answer goes into the look.
+its letter and what it is. The creator answers with a letter (« la B, mais parfois la C ») and the answer goes into their
+style. The options are neutral and widely spread on purpose : they come from no one's style.
 
-  python3 tools/choix.py <slug> zooms     A cuts only | B slow push / pull per shot | C B + eased punch-in on the strong word | D B + quick dezoom
-  python3 tools/choix.py <slug> sons      A no sound effect | B soft (a light click on cuts) | C punchy (click, whoosh, pop, impact)
-  python3 tools/choix.py <slug> musique [--tracks a.mp3,b.mp3,c.mp3]   one track per letter, 14 LU under the voice, ducked
-  python3 tools/choix.py <slug> mots [--words "QUARANTAINE@23.6,UNE@23.5"]   A no keyword | B « chrome » (title font) | C kinetic Poppins
-Options : --words  strong words as anchors "MOT@rush time" (default : numbers and long words of the sentence)
-          --look   look whose brand colours are used (default plan.look)
+  python3 tools/choix.py <slug> cadrages   A one fixed framing | B wide and tight | C wide, tight and very tight
+  python3 tools/choix.py <slug> rythme     A cut between sentences only, natural pauses | B a cut about every 4 s | C every 2 s, short pauses
+  python3 tools/choix.py <slug> zooms      A no zoom | B light (slow push 4 %) | C strong (push 8 % + quick zoom on the strong word)
+  python3 tools/choix.py <slug> sons       A no sound effect | B soft (a light click on cuts) | C marked (click, whoosh, pop, low hit)
+  python3 tools/choix.py <slug> musique [--tracks a.mp3,b.mp3,c.mp3]   one track per mood (tools/musique.py get trio), under the voice
+  python3 tools/choix.py <slug> mots       A no word on screen | B simple | C bold (accent colour)
+Options : --words  strong words as anchors "MOT@rush time" (default : a number or the longest word of the sentence)
+          --look   style whose brand colours and font are used (default plan.look)
 
 The project needs a short excerpt already cut : tools/projet.py, tools/transcribe.py, plan.keep with ONE sentence (8 to
 15 s), prompteur.py cut and base. Output : projects/<slug>/renders/choix-<kind>.mp4, copied to the output folder."""
@@ -104,7 +107,7 @@ def track_lufs(f, off, dur):
 
 
 def zoom_track(slug, style, words, d):
-    """The face track with one zoom style drawn on it (same renderer as the look)."""
+    """The face track with one zoom option drawn on it (same renderer as the style) : A none, B light, C strong."""
     W = PR.P(slug, "work")
     base = os.path.join(W, "base-v.mp4")
     n = frames(base)
@@ -113,19 +116,16 @@ def zoom_track(slug, style, words, d):
     cuts = [c / FPS for c in cuts_f]
     shots = list(zip(cuts, cuts[1:] + [end]))
     F = 1 / FPS
+    push = {"A": 0, "B": 4, "C": 8}[style]
     keys = []
     for k, (a, b) in enumerate(shots):
-        f0, f1 = (108, 100) if k % 2 else (100, 108)
+        f0, f1 = (100 + push, 100) if k % 2 else (100, 100 + push)
         w = next((t for _, t, _ in words if a + 0.2 <= t < b - 0.4), None)
-        if style == "A":
-            keys += [(a, 100), (b - F, 100)]
-        elif style == "B" or w is None:
-            keys += [(a, f0), (b - F, f1)]
-        elif style == "C":
+        if style == "C" and w is not None:
             v0 = f0 + (f1 - f0) * (w - 0.05 - a) / (b - a)
-            keys += [(a, f0), (w - 0.05 - F, v0)] + ease(w - 0.05, 0.27, v0, v0 + 12) + [(b - F, v0 + 12)]
-        elif style == "D":
-            keys += ease(a, 0.45, 118, 100) + [(b - F, 103)]
+            keys += [(a, f0), (w - 0.05 - F, v0)] + ease(w - 0.05, 0.27, v0, v0 + 15) + [(b - F, v0 + 15)]
+        else:
+            keys += [(a, f0), (b - F, f1)]
     seen, out = set(), []
     for t, v in sorted(keys):
         t = round(max(t, 0), 3)
@@ -136,28 +136,51 @@ def zoom_track(slug, style, words, d):
     return dst
 
 
+def recut(slug, overrides, d, tag):
+    """Cuts the excerpt again with plan overrides (framings, rhythm) and returns (face video, voice wav) ; plan restored."""
+    import contextlib, io
+    pf = PR.P(slug, "plan.json")
+    orig = open(pf).read()
+    try:
+        plan = json.loads(orig)
+        plan.update(overrides)
+        plan.pop("base_video", None)
+        open(pf, "w").write(json.dumps(plan, ensure_ascii=False, indent=1))
+        with contextlib.redirect_stdout(io.StringIO()):
+            PR.cmd_cut(slug); PR.cmd_base(slug)
+        v, a = os.path.join(d, f"face-{tag}.mp4"), os.path.join(d, f"voice-{tag}.wav")
+        shutil.copy(PR.P(slug, "work", "base-v.mp4"), v)
+        mix(slug, a)
+        return v, a
+    finally:
+        open(pf, "w").write(orig)
+        with contextlib.redirect_stdout(io.StringIO()):
+            PR.cmd_cut(slug); PR.cmd_base(slug)
+
+
 def keyword_overlays(slug, words, look_name, d):
     """Renders the two keyword styles (HyperFrames, transparent WebM) on the strong words ; returns {style: (webm, start)}."""
     import prompteur_blocks as B
     plan = PR.load_plan(slug)
-    look = json.load(open(os.path.join(HERE, "looks", look_name or plan.get("look", "exemple"), "look.json")))
+    look = json.load(open(os.path.join(HERE, "looks", look_name or plan.get("look", "_modele"), "look.json")))
     B.set_brand(look.get("brand"))
     pieces = PR.edl(slug)
     s = max(0.0, min(t for _, t, _ in words) - 0.15)
     e = max(t for _, t, _ in words) + 1.8
     rel = lambda a: max(0.0, PR.to_out(slug, PR.anchor(slug, a), pieces) - s)
     out = {}
-    for style in ("chrome", "kinetic"):
+    for style in ("simple", "gras"):
         wd = os.path.join(d, f"kw-{style}")
         os.makedirs(os.path.join(wd, "assets", "fonts"), exist_ok=True)
         shutil.copy(os.path.join(HERE, "assets", "gsap.min.js"), os.path.join(wd, "assets"))
         shutil.copy(os.path.join(HERE, "assets", "hyperframes.json"), os.path.join(wd, "hyperframes.json"))
         for f in B.fonts():
             shutil.copy(os.path.join(HERE, "assets", "fonts", f), os.path.join(wd, "assets", "fonts"))
-        ws = [[txt.upper(), anc] + (["acc"] if i == len(words) - 1 and style == "chrome" else []) for i, (txt, _, anc) in enumerate(words)]
-        if style == "kinetic":
-            ws[-1] = ws[-1][:2] + [B.OR]
-        ins = {"id": f"kw-{style}", "kind": "keyword", "style": "chrome" if style == "chrome" else "kinetic", "words": ws}
+        if style == "gras":
+            ws = [[txt.upper(), anc] + (["acc"] if i == len(words) - 1 else []) for i, (txt, _, anc) in enumerate(words)]
+        else:
+            ws = [[txt, anc] for txt, _, anc in words]
+        ins = {"id": f"kw-{style}", "kind": "keyword", "style": style, "words": ws}
         html, _ = B.build(ins, e - s, rel, PR.P(slug, "assets"))
         open(os.path.join(wd, "index.html"), "w").write(html)
         webm = os.path.join(d, f"kw-{style}.webm")
@@ -178,7 +201,7 @@ def overlay(video, webm, start, dst):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("slug"); ap.add_argument("kind", choices=["zooms", "sons", "musique", "mots"])
+    ap.add_argument("slug"); ap.add_argument("kind", choices=["cadrages", "rythme", "zooms", "sons", "musique", "mots"])
     ap.add_argument("--words", help='strong words, comma separated anchors "MOT@12.3"')
     ap.add_argument("--tracks", help="musique : 2 or 3 files of assets/music, comma separated")
     ap.add_argument("--look")
@@ -188,41 +211,71 @@ def main():
     if not os.path.exists(os.path.join(W, "base-v.mp4")):
         raise SystemExit("cut the excerpt first : prompteur.py cut and base")
     d = os.path.join(W, f"choix-{A.kind}"); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
+    plan = PR.load_plan(slug)
+    two = len(plan.get("cameras", ["A"])) > 1
     words = strong_words(slug, [w.strip() for w in A.words.split(",")] if A.words else None)
     print("strong words :", ", ".join(f"{w} ({t:.2f} s)" for w, t, _ in words))
     cut_times = [p["out"][0] / FPS for p in PR.edl(slug)[1:]]
     variants = []  # (letter, what, video, audio)
-    if A.kind == "zooms":
+    if A.kind == "cadrages":
+        opts = ([("A", "un seul cadrage", {"framings": ["A", "B"], "zoom": {}}),
+                 ("B", "large et serré", {"framings": ["A", "At", "B", "Bt"], "zoom": {"At": 1.25, "Bt": 1.25}}),
+                 ("C", "large, serré, très serré", {"framings": ["A", "At", "Att", "B", "Bt", "Btt"], "zoom": {"At": 1.2, "Att": 1.5, "Bt": 1.2, "Btt": 1.5}})]
+                if two else
+                [("A", "un seul cadrage", {"framings": ["A"], "zoom": {}}),
+                 ("B", "large et serré", {"framings": ["A", "At"], "zoom": {"At": 1.3}}),
+                 ("C", "large, serré, très serré", {"framings": ["A", "At", "Att"], "zoom": {"At": 1.25, "Att": 1.6}})])
+        for L, what, o in opts:
+            print(f"  {L} values for the style (framing) : cycle {o['framings']}, zoom {o['zoom']}, first {o['framings'][0]}")
+            o = dict(o, first_angle=o["framings"][0], max_shot=3.0, shot_target=2.5, min_shot=1.4, cam_hold=0.0)
+            variants.append((L, what) + recut(slug, o, d, L))
+    elif A.kind == "rythme":
+        fr = plan.get("framings") if len(plan.get("framings") or []) > 1 else (["A", "At", "B", "Bt"] if two else ["A", "At"])
+        zm = plan.get("zoom") or {"At": 1.25, "Bt": 1.25}
+        opts = [("A", "coupes entre les phrases, pauses naturelles", {"max_shot": 1e9, "max_pause": 0.8, "pause_keep": 0.6}),
+                ("B", "une coupe toutes les 4 s environ", {"max_shot": 5.0, "shot_target": 4.0, "min_shot": 2.0, "max_pause": 0.6, "pause_keep": 0.45}),
+                ("C", "une coupe toutes les 2 s, pauses courtes", {"max_shot": 2.6, "shot_target": 2.0, "min_shot": 1.2, "max_pause": 0.45, "pause_keep": 0.3})]
+        for L, what, o in opts:
+            print(f"  {L} values for the style (cut) : {o}")
+            o = dict(o, framings=fr, zoom=zm, first_angle=fr[0], cam_hold=0.0)
+            variants.append((L, what) + recut(slug, o, d, L))
+    elif A.kind == "zooms":
         voice = mix(slug, os.path.join(d, "voice.wav"))
-        for L, what in (("A", "coupes seules"), ("B", "poussée lente"), ("C", "zoom amorti sur le mot fort"), ("D", "dézoom rapide")):
+        for L, what in (("A", "aucun zoom"), ("B", "zoom léger"), ("C", "zoom marqué sur le mot fort")):
             variants.append((L, what, zoom_track(slug, L, words, d), voice))
     else:
-        video = zoom_track(slug, "B", words, d)
+        video = os.path.join(W, "base-v.mp4")
         if A.kind == "sons":
-            punchy = [("click-soft.wav", t, -24) for t in cut_times] + [("whoosh-short.wav", 0.0, -22)] + \
-                     [("pop.wav", t - 0.02, -20) for _, t, _ in words] + [("impact-bass-1.wav", words[0][1], -20)]
+            marked = [("click-soft.wav", t, -25) for t in cut_times] + [("whoosh-short.wav", 0.0, -24)] + \
+                     [("pop.wav", t - 0.02, -21) for _, t, _ in words] + [("impact-bass-1.wav", words[0][1], -21)]
             variants = [("A", "aucun bruitage", video, mix(slug, os.path.join(d, "a.wav"))),
-                        ("B", "doux", video, mix(slug, os.path.join(d, "b.wav"), [("click-soft.wav", t, -30) for t in cut_times])),
-                        ("C", "punchy", video, mix(slug, os.path.join(d, "c.wav"), punchy))]
+                        ("B", "bruitages doux", video, mix(slug, os.path.join(d, "b.wav"), [("click-soft.wav", t, -30) for t in cut_times])),
+                        ("C", "bruitages marqués", video, mix(slug, os.path.join(d, "c.wav"), marked))]
         elif A.kind == "musique":
-            plan = PR.load_plan(slug)
-            look = json.load(open(os.path.join(HERE, "looks", A.look or plan.get("look", "exemple"), "look.json")))
+            mdir = os.path.join(HERE, "assets", "music")
             if A.tracks:
-                tracks = [(f"assets/music/{os.path.basename(t)}", 0) for t in A.tracks.split(",")]
+                tracks = [f"assets/music/{os.path.basename(t)}" for t in A.tracks.split(",")]
             else:
-                tracks = [(p["file"], p.get("good_from", [0])[0]) for p in look.get("music", {}).get("palette", [])]
+                cr = json.load(open(os.path.join(mdir, "CREDITS.json"))) if os.path.exists(os.path.join(mdir, "CREDITS.json")) else {}
+                by_mood = {}
+                for f, e in sorted(cr.items()):
+                    if os.path.exists(os.path.join(mdir, f)):
+                        by_mood.setdefault(e.get("mood", f), f)
+                tracks = [f"assets/music/{f}" for f in list(by_mood.values())[:3]]
                 if len(tracks) < 2:
-                    tracks = [(f"assets/music/{f}", 0) for f in sorted(os.listdir(os.path.join(HERE, "assets", "music"))) if f.endswith((".mp3", ".wav", ".m4a"))]
+                    tracks = [f"assets/music/{f}" for f in sorted(os.listdir(mdir)) if f.endswith((".mp3", ".wav", ".m4a"))][:3]
             if len(tracks) < 2:
-                raise SystemExit("put at least 2 tracks in assets/music first (tools/musique.py get sombre)")
-            for L, (f, off) in zip("ABC", tracks[:3]):
-                variants.append((L, os.path.splitext(os.path.basename(f))[0].replace("-", " "), video, mix(slug, os.path.join(d, f"{L}.wav"), music=(f, off))))
+                raise SystemExit("put at least 2 tracks in assets/music first (tools/musique.py get trio)")
+            import musique
+            for L, f in zip("ABC", tracks[:3]):
+                off = musique.good_from(os.path.join(HERE, f))[0]
+                variants.append((L, os.path.splitext(os.path.basename(f))[0].replace("-", " "), video, mix(slug, os.path.join(d, f"{L}.wav"), music=(f, off), under=16.0)))
         elif A.kind == "mots":
-            voice = mix(slug, os.path.join(d, "voice.wav"), [("whoosh-short.wav", words[0][1] - 0.1, -26)])
+            voice = mix(slug, os.path.join(d, "voice.wav"))
             kw = keyword_overlays(slug, words, A.look, d)
             variants = [("A", "pas de mot à l'écran", video, voice),
-                        ("B", "mots chromés", overlay(video, *kw["chrome"], os.path.join(d, "b.mp4")), voice),
-                        ("C", "mots cinétiques", overlay(video, *kw["kinetic"], os.path.join(d, "c.mp4")), voice)]
+                        ("B", "mots simples", overlay(video, *kw["simple"], os.path.join(d, "b.mp4")), voice),
+                        ("C", "mots en gras", overlay(video, *kw["gras"], os.path.join(d, "c.mp4")), voice)]
     parts = []
     for L, what, v, a in variants:
         c = os.path.join(d, f"card-{L}.mp4"); card(L, c, what)

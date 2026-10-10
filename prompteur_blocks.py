@@ -1,17 +1,15 @@
-"""Insert blocks for prompteur.py (YouTube teleprompter format), in a cinematic documentary style.
+"""Insert blocks for prompteur.py : each kind turns one plan insert into a HyperFrames page.
 
-Every block returns (html, cues): a HyperFrames page 1920x1080 and its sound cues [(sfx file, seconds into the insert, dB)].
-`rel(anchor)` turns a spoken anchor ('mot@123.4', B time) into seconds from the insert's start.
+Every block returns (html, cues): a HyperFrames page 1920x1080 and its sound cues [(sfx file, seconds into the insert, dB)]
+(those built-in sounds are used only when the creator's style says so : look.sound.insert_sounds).
+`rel(anchor)` turns a spoken anchor ('mot@123.4', rush time) into seconds from the insert's start.
 
-Banned (a viewer spots them at once as « AI-made ») : white rounded cards with a shadow, small mono kicker + big black
-number + italic subtitle, cream grid paper. Instead : black cinematic stages with light and depth, the real interface of
-the tool being shown, cinematic stills, accent-coloured diamonds for numbers, a full-colour alert card, heavy keyword low
-on the face cam, real web pages in 3D depth, a logo on black. Little text : the image carries the idea.
-
-Colours and title font come from the look (look.json « brand », set by set_brand) : accent, background, title_family.
+Colours and title font come from the creator's style (look.json « brand », set by set_brand) : accent, background,
+title_family ; neutral white / near-black / Inter until the style gives them. Which kinds a video uses is the creator's
+choice and the montage's : the kit imposes none.
 
 Full-screen kinds (opaque): term, still, diamonds, alert, doc, logo, wall, tokens, bullets, ytcard, scene.
-Overlay kinds (transparent, over the face): caption, nametag, keyword, icon.
+Overlay kinds (transparent, over the face): caption, nametag, keyword (style simple or gras), icon.
 """
 import html as H
 import json
@@ -22,9 +20,9 @@ FONTS = ("InterTight-var.ttf", "inter-var.woff2", "jetbrainsmono-400.woff2", "je
          "Poppins-Light.ttf", "Poppins-Medium.ttf", "Poppins-SemiBold.ttf", "Poppins-ExtraBold.ttf", "Anton-Regular.ttf")
 OVERLAYS = {"caption", "nametag", "keyword", "icon"}
 W, HH = 1920, 1080
-OR = "#FF6B2C"  # accent colour, replaced by the look's brand.accent (set_brand)
+OR = "#FFFFFF"  # accent colour : neutral white until the look's brand.accent is set (set_brand)
 BG = "#040404"
-TITLE = "InterTight"  # family of the keyword / title font
+TITLE = "Inter"  # family of the keyword / title font, from the look's brand.title_family
 EXTRA_FONTS = []  # [{"family", "file", "weight"}] from the look's brand.fonts (files in assets/fonts)
 
 
@@ -52,10 +50,10 @@ def set_brand(brand):
     """brand = {"accent": "#hex", "background": "#hex", "title_family": "...", "fonts": [{"family", "file", "weight"}]}."""
     global OR, BG, TITLE, EXTRA_FONTS
     brand = brand or {}
-    OR = brand.get("accent", OR)
-    BG = brand.get("background", BG)
-    EXTRA_FONTS = brand.get("fonts", [])
-    TITLE = brand.get("title_family", TITLE)
+    OR = brand.get("accent") or OR
+    BG = brand.get("background") or BG
+    EXTRA_FONTS = brand.get("fonts") or []
+    TITLE = brand.get("title_family") or TITLE
 
 
 def fonts():
@@ -64,7 +62,9 @@ def fonts():
 
 
 def extra_css():
-    return "".join(f"@font-face{{font-family:'{f['family']}';src:url('assets/fonts/{f['file']}');font-weight:{f.get('weight', '100 900')};font-display:block}}"
+    """The brand's fonts, and the stage lit in the brand's background colour."""
+    stage = f".stage{{background:radial-gradient(ellipse 70% 60% at 50% 42%,{shade(BG, .1)} 0%,{BG} 55%,{shade(BG, -.5)} 100%)}}"
+    return stage + "".join(f"@font-face{{font-family:'{f['family']}';src:url('assets/fonts/{f['file']}');font-weight:{f.get('weight', '100 900')};font-display:block}}"
                    for f in EXTRA_FONTS)
 
 
@@ -153,7 +153,7 @@ def _col(c, bg=False):
 
 def term(ins, dur, rel, assets):
     """ins.rows = [[capture.json, row, {"old": "new"}?], ...] or ["", text, colour] for a typed line; ins.reveal = {index: anchor};
-    ins.focus = {row: index, at: anchor, scale}: orange frame round that line + gentle push towards it."""
+    ins.focus = {row: index, at: anchor, scale}: accent-coloured frame round that line + gentle push towards it."""
     fs, lh = ins.get("font", 24), ins.get("font", 24) * 1.42
     grids, lines = {}, []
     for k, r in enumerate(ins["rows"]):
@@ -195,7 +195,7 @@ def term(ins, dur, rel, assets):
              f"#panel{{position:absolute;left:50%;top:50%;width:{pw:.0f}px;height:{ph:.0f}px;margin-left:{-pw / 2:.0f}px;margin-top:{-ph / 2:.0f}px;"
              f"background:#0e0e0e;border:1px solid #2a2725;border-radius:14px;padding:35px 46px;overflow:hidden;"
              f"box-shadow:0 50px 120px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.03),0 0 140px {rgba(OR, .10)}}}</style>")
-    ov = bool(ins.get("overlay"))  # pop-up over the face cam (review, v2: « je veux voir ma tête, puis un pop-up »)
+    ov = bool(ins.get("overlay"))  # pop-up over the face cam (the face stays visible)
     if ov:
         style = style.replace("top:50%;", f"top:{ins.get('y', 700)}px;").replace(f"margin-top:{-ph / 2:.0f}px;", "margin-top:0px;")
     body = [style, "" if ov else '<div class="stage"></div>', '<div id="cam" style="position:absolute;inset:0"><div id="panel">', "".join(lines)]
@@ -256,7 +256,7 @@ def still(ins, dur, rel, assets):
 
 
 # ------------------------------------------------------------------ punch: the validated editorial captions (editorial captions)
-# Big white sentences posed in one block are ugly (review 2026-10-01 v3). Every text is in the editorial caption style :
+# A whole sentence posed in one block is hard to read : every text is in the editorial caption style :
 # Poppins, each word blurs in at the exact moment it is said (word timings of the edited voice),
 # the key words huge in mixed weights (thin / extra-bold / condensed Anton), soft halo, never a box.
 PSTYLE = {"s": ("Poppins", 500, 52, 1.15, "0"), "t": ("Poppins", 300, 130, .95, "-.01em"),
@@ -364,7 +364,7 @@ def nametag(ins, dur, rel, assets):
     return page(ins["id"], body, "\n".join(js), dur, fade_in=False, fade_out=False, opaque=False), []
 
 
-# ------------------------------------------------------------------ diamonds: numbered steps (« 1  the beginner »)
+# ------------------------------------------------------------------ diamonds: numbered steps
 def diamond_svg(n, size, idx):
     return (f'<svg width="{size}" height="{size}" viewBox="0 0 100 100" style="display:block;overflow:visible">'
             f'<defs><linearGradient id="dg{idx}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{shade(OR, .3)}"/><stop offset=".55" stop-color="{OR}"/>'
@@ -376,8 +376,8 @@ def diamond_svg(n, size, idx):
 
 
 def diamonds(ins, dur, rel, assets):
-    """mode row: N diamonds pop left to right + title + sub (« 7 techniques »).
-    mode one: one diamond + label beside it (« 1  le bon modèle »)."""
+    """mode row: N numbered diamonds pop left to right + title + sub.
+    mode one: one numbered diamond + label beside it."""
     body, js = ['<div class="stage"></div>'], []
     cues = [("whoosh-short.wav", -0.08, -26)]
     if ins.get("mode", "row") == "row":
@@ -412,7 +412,7 @@ def diamonds(ins, dur, rel, assets):
     return page(ins["id"], "".join(body), "\n".join(js), dur, fade_in=False), cues
 
 
-# ------------------------------------------------------------------ alert: full-colour card (« mistake n°1 »)
+# ------------------------------------------------------------------ alert: full-colour card
 CLAUDE_ORB = ('<div id="orb" style="position:absolute;left:{x}px;top:{y}px;width:{s}px;height:{s}px;border-radius:50%;'
               'background:radial-gradient(circle at 35% 30%,#ff9a6a,#e8622c 55%,#b8441a);box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 -10px 30px rgba(0,0,0,.25);'
               'display:flex;align-items:center;justify-content:center"><img src="assets/{src}" style="width:58%;height:58%"></div>')  # ins.orb = a logo file listed in ins.files
@@ -586,11 +586,10 @@ def scene(ins, dur, rel, assets):
 
 
 # ------------------------------------------------------------------ keyword : one or two strong words, huge, on the face cam
-def keyword_chrome(ins, dur, rel, assets):
-    """Keyword style « chrome » : the title font (Inter Tight Black by default)
-    capitals on his chest, white with a faint metal fall-off, the strong word orange with a glow, a soft dark veil on the lower
-    half while it shows. His own spoken words only, each landing as he says it (« suis ce que je dis à la parole, juste les mots
-    importants à certains moments »). ins.words = [[text, anchor, color?]]."""
+def keyword_gras(ins, dur, rel, assets):
+    """Keyword style « gras » : heavy capitals in the title font on the chest, white with a faint fall-off, the strong word
+    in the accent colour with a glow, a soft dark veil on the lower half while it shows. Spoken words only, each landing as
+    it is said. ins.words = [[text, anchor, "acc"?]]."""
     sz = ins.get("size", 116)
     yc = ins.get("yc", 902)  # 83.5 % of the height : under the chin
     spans, js, cues = "", [], []
@@ -604,7 +603,7 @@ def keyword_chrome(ins, dur, rel, assets):
                else "drop-shadow(0 2px 1.5px rgba(0,0,0,.35)) drop-shadow(0 10px 22px rgba(0,0,0,.45))")
         spans += (f'<span id="k{i}" style="display:inline-block;margin:0 .11em;opacity:0;background:{fill};-webkit-background-clip:text;'
                   f'background-clip:text;color:transparent;filter:{flt}">{H.escape(txt)}</span>')
-        if ins.get("br_after") == i:  # a chosen line break (v11 : « plus » on one line, « en travaillant moins » below)
+        if ins.get("br_after") == i:  # a chosen line break
             spans += "<br>"
         js.append(f"tl.fromTo('#k{i}',{{opacity:0,y:12,scale:1.06,filter:'blur(14px)'}},{{opacity:1,y:0,scale:1,filter:'blur(0px)',duration:.17,ease:'power3.out'}},{max(at - 0.04, 0):.3f});")
         js.append(f"tl.set('#k{i}',{{filter:'none'}},{max(at - 0.04, 0) + 0.18:.3f});")
@@ -620,13 +619,14 @@ def keyword_chrome(ins, dur, rel, assets):
 
 
 def keyword(ins, dur, rel, assets):
-    if ins.get("style") == "chrome":
-        return keyword_chrome(ins, dur, rel, assets)
+    if ins.get("style") == "gras":
+        return keyword_gras(ins, dur, rel, assets)
+    # style « simple » (default) :
     """Kinetic keywords (keywords yes, never the whole sentence) : ins.words =
     [[text, anchor, color?]] each word lands on its spoken word (scale 1.35 -> 1, blur -> sharp, a short whoosh), the
-    block sits low on the chest (ins.y) and leaves with the insert. Never his whole sentence."""
-    y = ins.get("y", 690)
-    sz = ins.get("size", 150)
+    block sits low on the chest (ins.y) and leaves with the insert. Never the whole sentence."""
+    y = ins.get("y", 760)
+    sz = ins.get("size", 120)
     spans, js, cues = "", [], []
     for i, w in enumerate(ins["words"]):
         txt, at = w[0], t_of(rel, w[1], 0.0)
@@ -635,8 +635,8 @@ def keyword(ins, dur, rel, assets):
                   f'text-shadow:0 0 60px rgba(0,0,0,.55),0 6px 30px rgba(0,0,0,.7),0 0 26px {rgba(OR, .55) if col != "#fff" else "rgba(0,0,0,0)"}">{H.escape(txt)}</span>')
         js.append(f"tl.fromTo('#k{i}',{{opacity:0,scale:1.35,filter:'blur(10px)'}},{{opacity:1,scale:1,filter:'blur(0px)',duration:.18,ease:'power3.out'}},{max(at - 0.03, 0):.3f});")
         cues.append(("whoosh-short.wav", max(at - 0.08, 0), -24))
-    body = (f'<div class="c" style="top:{y}px"><div style="display:inline-block;font-family:Poppins;font-weight:800;letter-spacing:-.02em;'
-            f'text-transform:uppercase;font-size:{sz}px;line-height:1">{spans}</div></div>')
+    body = (f'<div class="c" style="top:{y}px"><div style="display:inline-block;font-family:{TITLE};font-weight:700;letter-spacing:-.02em;'
+            f'font-size:{sz}px;line-height:1">{spans}</div></div>')
     js.append(f"tl.to('#stg',{{opacity:0,duration:.12}},{dur - 0.12:.3f});")
     return page(ins["id"], body, "\n".join(js), dur, fade_in=False, fade_out=False, opaque=False), cues
 

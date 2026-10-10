@@ -136,13 +136,12 @@ def energy(slug):
 
 
 def tighten(slug, plan, s, e):
-    """Linear rhythm (review, 2026-10-01 v3 : « parfois ça accélère, parfois ça ralentit ») : inside a kept range every
-    pause longer than plan.max_pause (0.45 s) becomes exactly plan.pause_keep (0.3 s); shorter pauses are left as said.
-    The take keeps plan.edge_keep (0.2 s) before its first sound and after its last one. Silence is measured with a low
-    threshold (plan.quiet_db, 38 dB under the take's speaking level) so a soft onset or word ending is never eaten
-    (v3 : « concernant », « tes », « hebdomadaire » were clipped)."""
+    """Linear rhythm : inside a kept range every pause longer than plan.max_pause becomes exactly plan.pause_keep (both
+    from the creator's look ; neutral defaults 0.8 / 0.6 s) ; shorter pauses are left as said. The take keeps
+    plan.edge_keep (0.2 s) before its first sound and after its last one. Silence is measured with a low threshold
+    (plan.quiet_db, 38 dB under the take's speaking level) so a soft onset or word ending is never eaten."""
     db = energy(slug)
-    i0, i1 = int(round(s * 100)), int(round(e * 100))  # round, never truncate (295.40 -> frame 29539 started a take one frame into « Technique », QA v3)
+    i0, i1 = int(round(s * 100)), int(round(e * 100))  # round, never truncate (295.40 -> frame 29539 started a take one frame into the next word)
     s, e = i0 / 100, i1 / 100
     seg = db[i0:i1]
     if len(seg) < 10:
@@ -151,16 +150,16 @@ def tighten(slug, plan, s, e):
     idx = np.flatnonzero(loud)
     if not len(idx):
         return [(s, e)]
-    edge, maxp, keep = plan.get("edge_keep", 0.2), plan.get("max_pause", 0.45), plan.get("pause_keep", 0.3)
+    edge, maxp, keep = plan.get("edge_keep", 0.2), plan.get("max_pause", 0.8), plan.get("pause_keep", 0.6)
     thr = max(np.percentile(seg, 95) - plan.get("quiet_db", 38), plan.get("speech_db", -42))  # room noise (-50 dB) is not speech (QA v3)
-    # start : a hand-written start that falls inside the first word moves back to its attack (QA v3 : « Donc », « Et »
+    # start : a hand-written start that falls inside the first word moves back to its attack (short first words were
     # clipped), then plan.edge_keep of silence before it, never over another sound
     te = plan.get("speech_db", -42)  # one absolute speech threshold for the edges, same as tools/qa_measure.py
     ie = np.flatnonzero(seg >= te)
     ie = ie if len(ie) else idx
     first = s + ie[0] / 100
     k = i0
-    if plan.get("_strict_start") and db[k] >= te:  # strict_start : a cut placed between two words said without a gap (« cinq | gestes »)
+    if plan.get("_strict_start") and db[k] >= te:  # strict_start : a cut placed between two words said without a gap (two words with no gap between them)
         first = s
     elif db[k] >= te:
         n = 0
@@ -172,13 +171,13 @@ def tighten(slug, plan, s, e):
         n += 1
     head = first - n / 100
     tail = min(e, s + (ie[-1] + 1) / 100 + edge)
-    # end : the end of a sentence breathes (v2, 2026-10-02 : « quand je dis le gros modèle, ça se coupe trop vite ») :
+    # end : the end of a sentence breathes (a word ending must never be eaten) :
     # plan.tail_keep (0.4 s) after the last sound, past the hand-written end if needed, never into the next sound (a
     # retake). A word still sounding across the hand-written end is finished first, but only if it was already
-    # sounding before it (otherwise that sound is the attack of a retake : « description. É… Et évidemment », QA v3)
+    # sounding before it (otherwise that sound is the attack of a retake)
     last = s + (ie[-1] + 1) / 100
     after = db[i1:i1 + 150] >= te
-    if not plan.get("_strict_end") and len(after) > 3 and after[:3].any() and db[max(0, i1 - 5):i1].max() >= te:  # strict_end : never finish into the next word (« fort donc », v10 QA)
+    if not plan.get("_strict_end") and len(after) > 3 and after[:3].any() and db[max(0, i1 - 5):i1].max() >= te:  # strict_end : never finish into the next word
         run = 0
         for kk, v in enumerate(after[:50]):
             run = 0 if v else run + 1
@@ -213,8 +212,8 @@ def cmd_cut(slug):
     for n_k, k in enumerate(plan["keep"]):
         s, e = anchor(slug, k[0]), anchor_end(slug, k[1])
         opt = opts[n_k]
-        # {"join": true} : this take continues the previous one's sentence (review v9 : « il y a un petit temps alors que ça
-        # devrait être une phrase entière ») : 0.06 s kept after the previous word, 0.03 s before this one, nothing borrowed
+        # {"join": true} : this take continues the previous one's sentence (no gap may split one sentence) : 0.06 s kept
+        # after the previous word, 0.03 s before this one, nothing borrowed
         nxt_join = n_k + 1 < len(opts) and opts[n_k + 1].get("join")
         tp = dict(plan, tail_keep=0.06, edge_keep=plan.get("edge_keep", 0.2)) if nxt_join else plan
         if opt.get("strict_end"):
@@ -229,33 +228,29 @@ def cmd_cut(slug):
         tk = tighten(slug, tp, s, e)
         if nxt_join and tk:  # tighten keeps at least edge_keep after the last sound : trim to the join tail
             tk[-1] = (tk[-1][0], min(tk[-1][1], e + 0.06) if e > tk[-1][0] else tk[-1][1])
-        if missing > 0.02 and tk:  # the previous take ran straight into speech (« son gros modèle | c'est d'ailleurs ») :
+        if missing > 0.02 and tk:  # the previous take ran straight into speech  :
             a0 = tk[0][0]           # its pause is taken from the silence before this take, never over a sound
             thr = max(np.percentile(db[int(s * 100):int(e * 100)], 95) - plan.get("quiet_db", 38), plan.get("speech_db", -42))
             k0 = int(a0 * 100)
             n = 0
             while n < int(missing * 100) and k0 - n - 1 >= 0 and db[k0 - n - 1] < thr:
                 n += 1
-            tk[0] = (a0 - max(0, n - 5) / 100, tk[0][1])  # 50 ms clear of the sound before (QA v4 : the tail of a dropped « peu »)
+            tk[0] = (a0 - max(0, n - 5) / 100, tk[0][1])  # 50 ms clear of the sound before (the tail of a dropped word)
         missing = 0.0 if nxt_join else max(0.0, plan.get("tail_keep", 0.4) - getattr(tighten, "breath", 0.4))
         for j, (a, b) in enumerate(tk):
             fa, fb = round(a * FPS), round(b * FPS)
             if fb - fa >= 3:
                 pieces.append([fa, fb, j == 0, opt.get("tempo", 1.0), bool(opt.get("cold"))])
-    # face shots 2 to 3.5 s (review, full video v1: « des plans super longs, ça n'alterne pas, pas du tout dynamique »)
-    min_shot, max_shot = plan.get("min_shot", 1.4), plan.get("max_shot", 3.4)
-    # framings (2026-10-02 : « beaucoup de zooms, comme mes références ») : each new shot takes the next framing of
-    # plan.framings (wide / tight / very tight, both cameras), a clean cut, never a slow zoom ; in the intro (rush time
-    # < plan.intro_until) the shots are shorter (plan.intro_shot, ~1.7 s) like reference edits
-    cycle = plan.get("framings")
-    # the cycle advances by position, so a framing may come back in it (review 2026-10-05 : « un peu plus de plans sur la cam de
-    # face » -> At, A, Bt, At, A, Btt : two front shots out of three ; looking the name up again looped on its first place)
+    # rhythm from the creator's look (plan.min_shot / max_shot / shot_target) ; neutral default : a long sentence is not split
+    min_shot, max_shot = plan.get("min_shot", 1.0), plan.get("max_shot", 1e9)
+    # framings : each new shot takes the next framing of plan.framings (the creator's choice) ; neutral default : the whole
+    # picture of each camera. In the intro (rush time < plan.intro_until, optional) shots last plan.intro_shot.
+    cycle = plan.get("framings") or (["A", "B"] if len(plan.get("cameras", ["A", "B"])) > 1 else ["A"])
+    # the cycle advances by position, so a framing may come back in it (looking the name up again looped on its first place)
     pos = {"i": -1}
-    # camera hold (review 2026-10-05, on a reference edit : « les plans de face cam à
-    # la cam de côté allaient trop vite ») : a cut still comes every ~2.6 s (1.7 s in the intro), but it reframes on the SAME
-    # camera (wide <-> tight, the classic jump cut) until that camera has been on screen plan.cam_hold seconds ; only then the next
-    # cut goes to the other camera. Measured on a reference edit : it keeps one camera 4.3 s (median), we swapped every 2.5 s (side shots of 1.3 s)
-    hold, intro_hold = plan.get("cam_hold", {"A": 5.5, "B": 3.0}), plan.get("intro_cam_hold", 3.0)  # front ~6.6 s, side ~4.4 s, 60 % front
+    # camera hold : with two cameras a cut may reframe on the SAME camera until that camera has been on screen
+    # plan.cam_hold seconds ; only then the next cut goes to the other camera. Neutral default 0 : every cut may change camera.
+    hold, intro_hold = plan.get("cam_hold", 0.0), plan.get("intro_cam_hold", plan.get("cam_hold", 0.0))
     cam = {"len": 0.0}  # seconds the current camera has been shown
 
     def toggle(a, intro=False):
@@ -263,7 +258,8 @@ def cmd_cut(slug):
             return {"A": "B", "B": "A"}[a[0]]
         if pos["i"] < 0 or cycle[pos["i"]] != a:  # first call, or an angle forced from outside (lock, first_angle)
             pos["i"] = cycle.index(a) if a in cycle else -1
-        h = intro_hold if intro else (hold.get(a[0], 4.0) if isinstance(hold, dict) else hold)
+        h = intro_hold if intro else hold
+        h = h.get(a[0], 0.0) if isinstance(h, dict) else (h or 0.0)
         one_cam = len({f[0] for f in cycle}) == 1  # one phone : every cut reframes the same camera
         same = one_cam or (cam["len"] < h and len({f for f in cycle if f[0] == a[0]}) > 1)
         for _ in range(len(cycle)):  # next framing of the same camera, or of the other one once the hold is reached
@@ -272,16 +268,16 @@ def cmd_cut(slug):
                 break
         return cycle[pos["i"]]
     ws = words(slug)
-    # plan.first_angle : the very first shot (review v10 : « le hook au tout début, je veux pas la cam de côté, je veux la face cam »)
-    edl, out, shot_len, ang = [], 0, 0.0, plan.get("first_angle") or (cycle or plan.get("angle_seq", ["A", "B"]))[0]
+    # plan.first_angle : the very first shot (default : the first framing of the cycle)
+    edl, out, shot_len, ang = [], 0, 0.0, plan.get("first_angle") or cycle[0]
     for n, (fa, fb, first, tempo, cold) in enumerate(pieces):
         intro = fa / FPS < plan.get("intro_until", 0) or cold
-        mx, tg = (plan.get("intro_shot", 1.7) + 0.5, plan.get("intro_shot", 1.7)) if intro else (max_shot, plan.get("shot_target", 2.6))
+        mx, tg = (plan.get("intro_shot", 1.7) + 0.5, plan.get("intro_shot", 1.7)) if intro and plan.get("intro_shot") else (max_shot, plan.get("shot_target", 2.6))
         mn = 1.0 if intro else min_shot
         dur = (fb - fa) / FPS / tempo
         if n and (first or (shot_len >= mn and dur >= mn)):
             ang, shot_len = toggle(ang, intro), 0.0
-        lock = plan.get("lock_angle_from")  # [rush s, angle] : from there one camera, no change (v11 : the goodbye seen face on)
+        lock = plan.get("lock_angle_from")  # [rush s, angle] : from there one camera, no change (e.g. the goodbye on one framing)
         locked = bool(lock) and fa / FPS >= lock[0] and not cold
         if locked:
             ang = lock[1]
@@ -355,7 +351,9 @@ def angle_filter(plan, ang):
     src_w, src_h = cam_size(plan, cam)
     if len(ang) == 1:
         return "scale=1920:1080:flags=lanczos"
-    z = plan.get("zoom", {}).get(ang, {"At": 1.15, "Att": 1.35, "Bt": 1.3, "Btt": 1.5}.get(ang, 1.3))
+    z = plan.get("zoom", {}).get(ang)
+    if not z:
+        raise SystemExit(f"framing {ang} has no zoom factor in plan.zoom : the creator's style (looks/<name>/look.json, framing) must give it ; run the style-de-montage skill")
     cw, chh = int(src_w / z) // 2 * 2, int(src_h / z) // 2 * 2
     # plan.crop_x_min {cam: px} keeps an edge object (a mirror, a lamp) out of the tight shot
     x = min(max(int(fx * src_w - cw / 2), plan.get("crop_x_min", {}).get(cam, 0)), src_w - cw)
@@ -393,7 +391,7 @@ def cmd_base(slug):
     for p in pieces:
         a, b = p["src"]
         n = p["out"][1] - p["out"][0]
-        if n <= 0:  # « -frames:v -18 » made ffmpeg run for 30 h and write a 51 GB .part (a long video, found 2026-10-04)
+        if n <= 0:  # « -frames:v -18 » made ffmpeg run for 30 h and write a 51 GB .part (found 2026-10-04)
             raise SystemExit(f"piece {a}-{b} has {n} frames : fix plan.keep (a take ends before it starts)")
         tempo = p.get("tempo", 1.0)
         cam = p["angle"][0]
@@ -414,7 +412,7 @@ def cmd_base(slug):
             # one colour range for every piece: camera A records full range (yuvj420p), B limited; mixing them in the
             # concat changes the stream parameters mid-video (filtergraph re-init: inserts dropped, contrast jumps)
             dz = ""
-            if p.get("dezoom"):  # review 2026-10-02 : « le dézoom et tout », like his three references
+            if p.get("dezoom"):  # optional quick dezoom at the start of an intro sentence (plan.dezoom)
                 z0, nf = p["dezoom"], 12
                 dz = (f",scale=3840:2160:flags=lanczos,zoompan=z='if(lt(on,{nf}),1+{z0 - 1:.3f}*pow(1-on/{nf},3),1)':d=1"
                       f":x='(iw-iw/zoom)/2':y='(ih-ih/zoom)*0.42':s=1920x1080:fps=30")
@@ -466,7 +464,7 @@ def cmd_base(slug):
         if n == len(pieces) - 1 or pieces[n + 1]["src"][0] != b:
             x[-fade:] *= ramp[::-1]
             # a word that the rush cuts short (he ran straight into the next sentence) ends with a soft 70 ms fall
-            # instead of a wall (v2 : « quand je dis le gros modèle, ça se coupe trop vite »)
+            # instead of a wall
             h = sr // 100
             lv = [20 * np.log10(np.sqrt(np.mean(x[i:i + h] ** 2)) + 1e-9) for i in range(0, len(x) - h, h)]
             k = max((i for i, v in enumerate(lv) if v > -40), default=None)
@@ -521,9 +519,9 @@ def cmd_inserts(slug):
         if not any(abs(y["_s"] - x["_e"] + 3 / FPS) < 0.01 for y in full):
             x["_e"] += 1 / FPS
     # a keyword never sits on a full-screen visual (it would be hidden or fight it) : dropped there
-    # (nor under another overlay such as the Claude Code popup : k01 « TA LIMITE » was hidden by h_pop, 2026-10-03)
+    # (nor under another overlay such as a pop-up : it would hide it)
     others = full + [o for o in plan["inserts"] if overlay_kind(o) and o.get("kind") not in ("keyword", "icon")]
-    drop = [i["id"] for i in plan["inserts"] if i.get("kind") == "keyword" and not i.get("over")  # over : the creator asked for it there
+    drop = [i["id"] for i in plan["inserts"] if i.get("kind") == "keyword" and not i.get("over")  # over : asked for there
             and any(o["_s"] < i["_e"] - 0.1 and o["_e"] > i["_s"] + 0.1 for o in others)]
     if drop:
         print("  keywords under a full visual, dropped :", ", ".join(drop))
@@ -619,12 +617,14 @@ def sfx_cues(slug, plan, times, dur):
     """Every sound effect of the edit as (file, out time, dB) : insert sounds, the look's rules, plan.sfx, levels, dedupe.
     Shared by compose (pre-mixed track) and premiere/build_timeline.py (one clip per sound)."""
     cues = []
-    if not plan.get("no_sfx"):
+    look = load_look(plan)
+    # sounds built into the inserts (typing, pops of a list...) : only when the creator chose them (look.sound.insert_sounds)
+    if not plan.get("no_sfx") and (look or {}).get("sound", {}).get("insert_sounds"):
         for ins in plan["inserts"]:
             for f, off, db in times[ins["id"]][2]:
                 cues.append((f, times[ins["id"]][0] + off, db))
     look = load_look(plan)
-    if look and not plan.get("no_sfx"):  # the look's sound rules (review 2026-10-02 : « pour les sons, je préfère punchy »)
+    if look and not plan.get("no_sfx"):  # the look's sound rules (none when the creator chose none)
         rule = {c["on"]: c for c in look.get("sound", {}).get("cues", [])}
         covered = []
         for ins in plan["inserts"]:
@@ -643,12 +643,12 @@ def sfx_cues(slug, plan, times, dur):
                 cues.append((c["file"], t, c["db"]))
     for f, t, db in plan.get("sfx", []):  # extra sounds placed on a spoken word ("mot@123.4", "cold:420.6") or an output time
         cues.append((f, to_out(slug, anchor(slug, t)) if isinstance(t, str) else float(t), db))
-    # one level scale for every sound effect (intro review 2026-10-02 : -10 to -27 dB, the whooshes vanished under the voice) :
+    # one level scale for every sound effect (-10 to -27 dB made some sounds vanish under the voice) :
     # plan.sfx_levels {file: dB} wins, else nothing below plan.sfx_floor (-24 dB, except typing)
     lv, floor = plan.get("sfx_levels") or (look or {}).get("sound", {}).get("levels", {}), plan.get("sfx_floor")
     if lv or floor is not None:
         cues = [(f, t, lv.get(f, max(db, floor) if floor is not None and f != "typing.wav" else db)) for f, t, db in cues]
-    # the same sound twice within 150 ms is one sound (intro review : seven pops 70 ms apart made a buzz)
+    # the same sound twice within 150 ms is one sound (seven pops 70 ms apart made a buzz)
     cues.sort(key=lambda c: c[1])
     kept = []
     for c in cues:
@@ -697,7 +697,7 @@ def cmd_compose(slug, name="v1"):
         f = P(slug, "work", "ins", f"{ins['id']}.{'webm' if overlay_kind(ins) else 'mp4'}")
         inputs += (["-c:v", "libvpx-vp9"] if f.endswith("webm") else []) + ["-i", f]
         # half a frame early: an insert placed on frame n must be drawn ON frame n (v5 : starting exactly at s, ffmpeg drew
-        # it one frame late and one frame of the camera underneath showed at the cut, « un plan de côté très léger »)
+        # it one frame late and one frame of the camera underneath showed at the cut)
         off = max(0.0, round(s * FPS) / FPS - 0.5 / FPS)
         # and the last frame cloned once: ffmpeg's overlay drops an input's last frame (it ends at that frame's pts)
         fc.append(f"[{k}:v]tpad=stop_mode=clone:stop=1,setpts=PTS-STARTPTS+{off:.4f}/TB[i{k}];[{last}][i{k}]overlay=0:0:eof_action=pass:format=auto[v{k}]")
@@ -737,7 +737,7 @@ def cmd_compose(slug, name="v1"):
         mix += ["[bed]", f"[{k + 1}:a]"]; k += 2
         print(report)
     elif m:
-        # Music that carries the intro (review, 2026-10-01 : « la musique est plate ») : the track starts on its drop
+        # Single-track music : the track starts on its drop
         # (m.offset), a cinematic hit lands on chosen words (m.hits, the sting's riser runs before them), the bed cuts out
         # just before a strong announcement (m.mutes) and comes up under full-screen inserts (m.boost_db).
         f = os.path.join(HERE, m["file"])
@@ -750,7 +750,7 @@ def cmd_compose(slug, name="v1"):
         terms = []
         for a, b in m.get("mutes", []):
             terms.append(f"between(t,{T(a):.3f},{T(b):.3f})*(-1)")
-        for a, b, d in m.get("dips", []):  # [from, to, dB] : the bed held lower (suspense), back up at « to »
+        for a, b, d in m.get("dips", []):  # [from, to, dB] : the bed held lower, back up at « to »
             terms.append(f"between(t,{T(a):.3f},{T(b):.3f})*({10 ** (d / 20) - 1:.3f})")
         if m.get("boost_db"):
             g = 10 ** (m["boost_db"] / 20) - 1
@@ -777,7 +777,7 @@ def cmd_compose(slug, name="v1"):
               f"{len(m.get('hits', []))} hits, {len(m.get('mutes', []))} mutes")
     else:
         fc.append("[key]anullsink")
-    fc.append(f"{''.join(mix)}amix=inputs={len(mix)}:normalize=0:duration=first,loudnorm=I={plan.get('lufs', -14)}:TP={plan.get('true_peak', -1.5)}:LRA=11,aresample=48000[a]")  # plan.lufs : review 2026-10-05, voice and music 2 dB lower on a clipped recording
+    fc.append(f"{''.join(mix)}amix=inputs={len(mix)}:normalize=0:duration=first,loudnorm=I={plan.get('lufs', -14)}:TP={plan.get('true_peak', -1.5)}:LRA=11,aresample=48000[a]")  # plan.lufs : -14 by default (YouTube), lower on a clipped recording
     fc.append(f"[{last}]format=yuv420p[v]")
     out = P(slug, "renders", f"{name}.mp4")
     os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -810,7 +810,7 @@ def music_layout(slug, plan, dur, times=None):
         stop, back = T(o["stop"]), T(o["back"])
         sil.append((stop, back))
         hooks += [(o.get("riser", "hook-riser-1.wav"), stop, o.get("riser_db", -16), "end"), (o.get("impact", "hook-impact-1.wav"), back, o.get("impact_db", -12), "start")]
-        if o.get("start_hit"):  # reference A : the video opens on a low hit, the music under it
+        if o.get("start_hit"):  # the video opens on a low hit, the music under it
             hooks.append((o.get("impact", "hook-impact-1.wav"), 0.0, o.get("impact_db", -12) - 3, "start"))
     for c in m.get("cuts", []):
         t0, t1 = span(c[0], c[1])
@@ -818,7 +818,7 @@ def music_layout(slug, plan, dur, times=None):
             t0, t1 = _fade_span(T, c)
             if c[2]:
                 hooks.append((c[2], t1, -18, "start"))
-            if len(c) > 4 and c[4] == "end":  # the outro : no music after the fade (review 2026-10-05, v2)
+            if len(c) > 4 and c[4] == "end":  # the outro : no music after the fade
                 sil.append((t1, dur))
             continue
         sil.append((t0, t1))
@@ -831,12 +831,12 @@ def music_layout(slug, plan, dur, times=None):
         sil.append((t, nxt))
         hooks.append((c.get("sound", "hook-reverse-1.wav"), t, c.get("db", -16), "end"))
     sil += [span(a, b) for a, b in m.get("stops", [])]
-    return segs, sil, [h for h in hooks if h[1] < dur]
+    return segs, sil, [h for h in hooks if h[1] < dur and h[0]]
 
 
 def music_fades(slug, plan, dur, times=None):
     """plan.music.cuts marked "fade" ([anchor, -1.5, sound, "fade"]) -> [(t0, t1)] : the music fades out over t0..t1, the next
-    track starts at t1 (review 2026-10-05 on v1 : the 1 s hard stop before a chapter card was « trop brusque »)."""
+    track starts at t1 (a fade instead of a hard stop)."""
     times = times or M.load(P(slug, "work", "insert-times.json"))
     T = lambda a: times[a[4:]][0] if isinstance(a, str) and a.startswith("ins:") else (to_out(slug, anchor(slug, a)) if isinstance(a, str) else float(a))
     out = []
@@ -850,7 +850,7 @@ def music_fades(slug, plan, dur, times=None):
 
 def _fade_span(T, c):
     """[anchor, -1.5, ...] : the fade ends on the anchor (a chapter card) ; [anchor, 2.0, ...] : it starts on the anchor and
-    lasts 2 s (the outro, « Alors voilà, j'espère que cette vidéo vous a plu ») ; [anchor, anchor2, ...] : from one to the other."""
+    lasts 2 s (the outro) ; [anchor, anchor2, ...] : from one to the other."""
     a = T(c[0])
     if isinstance(c[1], (int, float)):
         return (a + c[1], a) if c[1] < 0 else (a, a + c[1])
@@ -858,20 +858,19 @@ def _fade_span(T, c):
 
 
 def music_end_before(plan, f):
-    """The look's palette may stop a track before a part the creator refused : {"file": ..., "end_before": 138} (seconds of the file)."""
+    """The look's palette may stop a track before a part the creator does not want : {"file": ..., "end_before": 138} (seconds of the file)."""
     look = load_look(plan) or {}
     return next((p.get("end_before") for p in look.get("music", {}).get("palette", []) if p["file"] == f), None)
 
 
 def build_music_bed(slug, plan, dur):
-    """Music like the creator's reference (reference edits, 2026-10-02) : several dark « suspense
-    tech » tracks, never one loop for the whole video. plan.music :
+    """Music bed from plan.music (written by tools/music_plan.py from the creator's look) :
       segments [{file, at, offset, under_db}] : a track enters at « at » (anchor or out time) from its « offset » and runs until
-        the next segment or a stop ; under_db = LU under the voice (intro 11, body 18 as in the reference) ;
+        the next segment or a stop ; under_db = LU under the voice (from the look) ;
       cuts [[from, to, sound?]] : a hard stop (10 ms, no fade) before a strong sentence, back at « to » with sound
         (whoosh / impact) ;
       open {riser, impact, stop, back} : the intro hook, riser ending on « stop » (music silent), impact on « back » ;
-      close {at, sound} : the end of the intro, a reverse cymbal swelling up to « at », the music cut dead there ;
+      close {at, sound} : the end of the intro, a sound ending on « at », the music cut dead there ;
       stops [[from, to]] : no music (demos, lists, calls to action).
     Returns (bed.wav ducked later under the voice, hooks.wav never ducked, report)."""
     m = plan["music"]
@@ -883,7 +882,7 @@ def build_music_bed(slug, plan, dur):
 
     def load(f, offset=0.0, need=None):
         tmp = P(slug, "work", "music-seg.wav")
-        eb = music_end_before(plan, f)  # a track is never played past a part the creator refused (a high lead, 2026-10-05)
+        eb = music_end_before(plan, f)  # a track is never played past a part the creator does not want
         M.sh(["ffmpeg", "-v", "error", "-y", "-ss", str(offset)] + (["-to", str(eb)] if eb else []) + ["-i", os.path.join(HERE, os.path.expanduser(f)), "-ac", "2", "-ar", str(SR), tmp])
         x, _ = sf.read(tmp, always_2d=True)
         if need and len(x) < need:  # loop with a 3 s crossfade
@@ -974,7 +973,7 @@ def _whisper(model="medium"):
 
 
 def cmd_takes(slug):
-    """Each kept take transcribed ALONE (medium): the full-rush transcript merges retakes (« et jusqu'au mois dernier »
+    """Each kept take transcribed ALONE (medium): the full-rush transcript merges retakes (a phrase
     said twice read as once). Read every line for a doubled phrase; then `gaps`."""
     plan, (y, sr) = load_plan(slug), sf.read(voice(slug, True))
     m = _whisper()

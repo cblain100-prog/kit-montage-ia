@@ -24,6 +24,12 @@ def config():
             "browser": cfg.get("browser")}
 
 
+def personal_looks():
+    """The creator's styles : every folder of looks/ except the empty model (_modele)."""
+    d = os.path.join(HERE, "looks")
+    return sorted(x for x in os.listdir(d) if not x.startswith("_") and os.path.exists(os.path.join(d, x, "look.json")))
+
+
 def output_dir():
     d = config()["output_dir"]
     os.makedirs(d, exist_ok=True)

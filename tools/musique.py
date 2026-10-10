@@ -2,7 +2,8 @@
 """Music for the kit : no track is shipped in the repo (licences), this tool fetches free ones and registers them.
 
   python3 tools/musique.py list                         catalogue + what is already in assets/music
-  python3 tools/musique.py get sombre|electro|leger|<id> ...   download Kevin MacLeod tracks (CC BY 4.0) into assets/music
+  python3 tools/musique.py get calme|energique|tension|trio|<id> ...   download Kevin MacLeod tracks (CC BY 4.0) into assets/music
+                                                        (trio = the first track of each mood, for the choice video)
   python3 tools/musique.py add <file.mp3> --credit "..."       copy one of your own tracks (Mixkit, Pixabay, bought...)
   python3 tools/musique.py palette <look> <file> [<file> ...]  put these tracks in looks/<look>/look.json (music.palette)
 
@@ -19,9 +20,9 @@ CC = '"{t}" Kevin MacLeod (incompetech.com) Licensed under Creative Commons: By 
 
 # mood is a first guess : listen before choosing (the style skill builds a choice video for that)
 CATALOGUE = {
-    "sombre": ["Stormfront", "Lightless Dawn", "Hypnothis", "Long Note Four", "Darkest Child", "Dark Fog", "Deliberate Thought", "Investigations"],
-    "electro": ["Voxel Revolution", "Cyborg Ninja", "Bit Shift", "Digital Lemonade", "Electrodoodle", "Chill Wave"],
-    "leger": ["Cool Vibes", "Funk Game Loop", "Pamgaea", "Dreamer", "Inspired", "Local Forecast - Elevator"],
+    "calme": ["Chill Wave", "Cool Vibes", "Dreamer", "Inspired", "Local Forecast - Elevator"],
+    "energique": ["Voxel Revolution", "Cyborg Ninja", "Bit Shift", "Digital Lemonade", "Electrodoodle", "Funk Game Loop", "Pamgaea"],
+    "tension": ["Lightless Dawn", "Hypnothis", "Long Note Four", "Darkest Child", "Dark Fog", "Deliberate Thought", "Investigations"],
 }
 
 
@@ -75,7 +76,9 @@ def cmd_list():
 def cmd_get(names):
     want = []
     for n in names:
-        if n in CATALOGUE:
+        if n == "trio":
+            want += [ts[0] for ts in CATALOGUE.values()]
+        elif n in CATALOGUE:
             want += CATALOGUE[n]
         else:
             t = next((t for ts in CATALOGUE.values() for t in ts if slug(t) == slug(n)), None)
@@ -91,7 +94,8 @@ def cmd_get(names):
             with urllib.request.urlopen(req, timeout=60) as r, open(f + ".part", "wb") as o:
                 o.write(r.read())
             os.replace(f + ".part", f)
-        c[os.path.basename(f)] = {"name": f"{t}, Kevin MacLeod", "credit": CC.format(t=t), "licence": "CC BY 4.0",
+        mood = next(m for m, ts in CATALOGUE.items() if t in ts)
+        c[os.path.basename(f)] = {"name": f"{t}, Kevin MacLeod", "mood": mood, "credit": CC.format(t=t), "licence": "CC BY 4.0",
                                   "source": "https://incompetech.com", "duration": round(duration(f), 1)}
         print(f"ok  {os.path.basename(f)}  ({c[os.path.basename(f)]['duration']} s)")
     save_credits(c)

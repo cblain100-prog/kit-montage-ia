@@ -48,7 +48,7 @@ line(all(os.path.exists(os.path.join(HERE, "assets", "fonts", f)) for f in fonts
 sfx = glob.glob(os.path.join(HERE, "assets", "sfx", "*.wav"))
 line(len(sfx) >= 18, f"bruitages ({len(sfx)} dans assets/sfx)", ".venv/bin/python tools/make_sfx.py")
 mus = [f for f in glob.glob(os.path.join(HERE, "assets", "music", "*")) if f.endswith((".mp3", ".wav", ".m4a"))]
-line(len(mus) >= 2, f"musiques ({len(mus)} dans assets/music)", ".venv/bin/python tools/musique.py get sombre", required=False)
+line(len(mus) >= 2, f"musiques ({len(mus)} dans assets/music)", ".venv/bin/python tools/musique.py get trio", required=False)
 line(os.path.exists(os.path.join(HERE, "tools", "bin", "facebox")), "détecteur de visage (tools/bin/facebox)", "xcode-select --install puis scripts/install.sh", required=False)
 r = run(["npx", "--yes", "hyperframes@0.8.103", "--version"])
 line(bool(r and r.returncode == 0), "HyperFrames 0.8.103", "npx --yes hyperframes@0.8.103 --version (connexion internet)")
@@ -57,6 +57,10 @@ line(os.path.exists(kd) and open(kd).read().strip() == HERE, "emplacement du kit
 for s in ("style-de-montage", "montage-youtube"):
     p = os.path.expanduser(f"~/.claude/skills/{s}/SKILL.md")
     line(os.path.exists(p), f"skill {s}", "scripts/install.sh (ou copie skills/ dans .claude/skills du projet)", required=False)
+for a in sorted(glob.glob(os.path.join(HERE, "agents", "*.md"))):
+    line(os.path.exists(os.path.expanduser(f"~/.claude/agents/{os.path.basename(a)}")), f"agent {os.path.basename(a)[:-3]}", "scripts/install.sh", required=False)
+mine = __import__("montage").personal_looks()
+line(bool(mine), "style perso : " + (", ".join(mine) if mine else "aucun"), "skill style-de-montage (obligatoire avant le premier montage)", required=False)
 # Premiere
 import paths
 app = paths.app()

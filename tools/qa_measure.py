@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Stage 1 of the editing checks (no agent, no render, seconds) : every voice joint measured on the rush from
-assets/edl.json, against the grid validated by the creator. Agents only judge what this flags.
+assets/edl.json. Agents only judge what this flags (by ear).
 
-  breath   : >= 0.15 s of silence after the last word, 0.30 to 0.55 s in total around a joint (v2 : cuts too soon ; 2026-10-03 : 0.75 s « trop d'espace »)
+  breath   : >= 0.15 s of silence after the last word, at least 0.2 s in total around a joint, and no more than the
+             creator's plan.max_pause + 0.1 s (their rhythm, from their look)
   cut word : sound still above -30 dB in the last 50 ms of a piece (a word cut short)
   clipped  : sound above -35 dB in the first 30 ms of the next piece (an attack cut)
 
@@ -18,6 +19,7 @@ slug = sys.argv[1]
 db = PR.energy(slug)
 e = M.load(M.P(slug, "assets", "edl.json")); fps = e["fps"]; P = e["pieces"]
 SPEECH = -40
+MAXP = PR.load_plan(slug).get("max_pause", 0.8)
 def lvl(a, b): return float(np.max(db[int(a * 100):max(int(a * 100) + 1, int(b * 100))]))
 out, bad = [], 0
 for p, q in zip(P, P[1:]):
@@ -32,8 +34,8 @@ for p, q in zip(P, P[1:]):
              end_db=round(lvl(a1 - .02, a1), 1), start_db=round(lvl(b2, b2 + .03), 1))
     flags = []
     if r["after_word"] < 0.15: flags.append("breath-after")  # less is fine when the next take starts later (total below)
-    if r["after_word"] + r["before_word"] < 0.30: flags.append("breath-total")
-    if r["after_word"] + r["before_word"] > 0.55: flags.append("too-long")
+    if r["after_word"] + r["before_word"] < 0.20: flags.append("breath-total")
+    if r["after_word"] + r["before_word"] > MAXP + 0.1: flags.append("too-long")
     if r["end_db"] > -30: flags.append("cut-word")
     if r["start_db"] > -35: flags.append("clipped-attack")
     r["flags"] = flags; bad += bool(flags); out.append(r)

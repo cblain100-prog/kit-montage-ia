@@ -88,9 +88,9 @@ def music_plan(slug, plan, dur):
         off = g.get("offset", 0)
         # one file per segment, exactly as long as its chapter : a shorter track loops with a 3 s crossfade (v1,
         # 2026-10-05 : the clips pointed past the end of 86 s and 77 s tracks, no music from 3:25 to 4:52 and after 6:04 ;
-        # review : « il faut qu'il y ait toujours une petite musique de fond »), and a chapter change fades out inside it
+        # the music never stops by accident), and a chapter change fades out inside it
         raw = os.path.join(md, f"raw-{i}.wav")
-        eb = PR.music_end_before(plan, g["file"])  # never past a refused part of the track (a high lead, 2026-10-05)
+        eb = PR.music_end_before(plan, g["file"])  # never past the part of the track the creator does not want (palette end_before)
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(off)] + (["-to", str(eb)] if eb else []) + ["-i", os.path.join(HERE, os.path.expanduser(g["file"])), "-ac", "2", "-ar", str(SR), raw], check=True)
         x, _ = sf.read(MU.loop_track(raw, b - a + 1), always_2d=True)
         x = x[:int(round((b - a) * SR))]
@@ -254,7 +254,7 @@ def main():
             if last is None or abs(lv - last) >= 0.75:
                 keys.append({"time": round(a + (t - st), 3), "level": lv}); last = lv
         fo = plan["music"].get("fade_out", 0)
-        if fo and st + (b - a) >= dur - 0.2:  # the last track fades out over the end (v11 : « la musique reste et fade out sur les 2-3 dernières secondes »)
+        if fo and st + (b - a) >= dur - 0.2:  # the last track fades out over the end
             keys = [k for k in keys if k["time"] < b - fo] + [{"time": round(b - fo, 3), "level": last}, {"time": round(b - 0.01, 3), "level": -60}]
         else:
             keys.append({"time": round(b - 0.01, 3), "level": last})

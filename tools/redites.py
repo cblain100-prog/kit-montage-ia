@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Repeats the QA agent cannot see in a cleaned transcript (the creator's v9 review, 2026-10-03 : 7 repeats missed).
+"""Repeats the QA agent cannot see in a cleaned transcript (a cleaned transcript hides false starts).
   python3 tools/redites.py <slug>   -> work/qa/redites.json
-1. n-grams (3 to 5 words) said more often in the edit than in the teleprompter script (« pour pouvoir bénéficier » 2 vs 1) ;
+1. n-grams (3 to 5 words) said more often in the edit than in the teleprompter script (a group said twice, written once) ;
 2. words whose voiced time is far longer than the word (a false start Whisper merged into the next word) ;
 3. voiced stretches with no word at all (an untranscribed retake).
 Each item has an output time ; the agent only judges these, by ear."""

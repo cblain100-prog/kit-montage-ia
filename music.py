@@ -97,7 +97,7 @@ def _808(nd, rng, glide=True, drive=2.6, decay=1.25):
     return boom + click, td
 
 
-def make_sting_punchy(drop, tail=2.8, seed=11):
+def make_sting_rhythmic(drop, tail=2.8, seed=11):
     """B: rhythmic chord stabs (16ths at 100 bpm) + accelerating snare roll, tape-stop gap, big 808 drop."""
     rng = np.random.default_rng(seed)
     n, ni = int((drop + tail) * SR), int(drop * SR)
@@ -170,7 +170,7 @@ def make_sting_cinematic(drop, tail=3.2, seed=5):
     return out / max(1e-9, np.abs(out).max()) * 0.89
 
 
-STINGS = {"a": make_sting, "b": make_sting_punchy, "c": make_sting_cinematic}
+STINGS = {"a": make_sting, "b": make_sting_rhythmic, "c": make_sting_cinematic}
 DEFAULT_STING = "c"
 STING_TRIM_DB = {"a": 0.0, "b": 0.4, "c": -1.1}  # same loudness (measured LUFS) for a fair comparison
 

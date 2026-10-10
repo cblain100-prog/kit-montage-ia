@@ -1,5 +1,4 @@
-"""The creator edits the cuts and the music from the studio page (« je veux pouvoir contrôler les cuts, faire le dérush et
-recut comme je veux ; pareil pour la musique, baisser la musique de mon côté »).
+"""The creator edits the cuts and the music from the studio page.
 Every change is written to projects/<slug>/plan.json (the source of truth), so it survives every rebuild ; previews are computed
 with the engine itself (same cut rules, same music rules) so what is heard is what the rebuild gives."""
 import copy, json, os, subprocess, sys, threading, time
@@ -238,8 +237,7 @@ class Montage:
         return j
 
 
-# ------------------------------------------------------------------ Tella-like timeline (2026-10-04 : « comme dans Tella, je clique,
-# split et resplit, un truc beaucoup plus simple »)
+# ------------------------------------------------------------------ Tella-like timeline (click, split, delete)
 def _wave(self, per_s=50):
     x, sr = sf.read(PR.P(self.slug, "work", "base.wav"), always_2d=True)
     x = np.abs(x.mean(1)); hop = sr // per_s

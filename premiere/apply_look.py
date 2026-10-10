@@ -21,8 +21,11 @@ def ease(t0, dur, v0, v1, steps=6):
 
 def plan_keys(slug, until):
     plan = PR.load_plan(slug)
-    look = PR.load_look(plan)
-    zb, zc = look["zoom"]["default"], look["zoom"]["accent"]
+    look = PR.load_look(plan) or {}
+    z = look.get("zoom") or {}
+    # neutral when the creator chose no zoom : 100 % everywhere, no accent
+    zb = z.get("default") or {"from": 100, "to": 100}
+    zc = z.get("accent") or {"enabled": False}
     times = json.load(open(PR.P(slug, "work", "insert-times.json")))
     plan["inserts"] = [i for i in plan["inserts"] if i["id"] in times]
     full = [tuple(times[i["id"]][:2]) for i in plan["inserts"] if not PR.overlay_kind(i)]
@@ -35,20 +38,21 @@ def plan_keys(slug, until):
     # after the intro : spoken numbers and a few punch words (the body has no keyword cards)
     pieces = PR.edl(slug)
     kept = lambda t: any(p["src"][0] <= t * FPS < p["src"][1] and not p.get("cold") for p in pieces)
-    punch = re.compile(r"\d|^(" + look["zoom"].get("accent_words", "jamais|attention|important|gratuit|surtout|fini|cher") + r")\b", re.I)
+    aw = z.get("accent_words") or ""
+    punch = re.compile(r"\d" + (r"|^(" + aw + r")\b" if aw else ""), re.I)
     cand += [PR.to_out(slug, w["start"], pieces) for w in PR.words(slug) if punch.search(w["text"].strip(" .,!?«»")) and kept(w["start"])]
     ca = (plan.get("music") or {}).get("close", {}).get("at", plan.get("intro_until", 45))
     intro_end = PR.to_out(slug, PR.anchor(slug, ca)) if isinstance(ca, str) else float(ca)
     acc, last = [], -99
     for w in sorted(c for c in cand if c < until):
         shot = next(((a, b) for a, b in shots if a <= w < b), None)
-        gap = 5 if w < intro_end else 14  # « parfois le C », never on every shot
-        if zc.get("enabled", True) and shot and on_face(w) and on_face(w + 1.0) and w - last >= gap and shot[1] - w >= 0.5:  # accent.enabled false : no punch-in
+        gap = zc.get("gap_intro", 5) if w < intro_end else zc.get("gap", 14)  # an accent now and then, never on every shot
+        if zc.get("enabled", False) and shot and on_face(w) and on_face(w + 1.0) and w - last >= gap and shot[1] - w >= 0.5:  # accent.enabled false : no punch-in
             acc.append(w); last = w
-    # review 2026-10-05 : « tu fais beaucoup de zoom, des dézooms ça serait intéressant » : with zoom.default.alternate one shot
-    # pushes in, the next pulls out ; with zoom.dezoom every other accent is a quick dezoom from the start of its shot
-    zd, alt = look["zoom"].get("dezoom"), zb.get("alternate", False)
-    if zd and zd.get("enabled") is False:
+    # with zoom.default.alternate one shot pushes in, the next pulls out ; with zoom.dezoom enabled every other accent is a
+    # quick dezoom from the start of its shot
+    zd, alt = z.get("dezoom"), zb.get("alternate", False)
+    if zd and not zd.get("enabled", False):
         zd = None
     keys = []
     for k, (a, b) in enumerate(shots):

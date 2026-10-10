@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""the creator's look zooms (looks/<look>/look.json) applied to the face track with ffmpeg, when Premiere's MCP Bridge is down
-(v1, 2026-10-04 : the bridge stopped at 16:42 while review was away, nobody to click Start Bridge).
-Same keys as premiere/apply_look.py (plan_keys : B push 100 -> 108 % over each shot, C eased +12 % on a strong word,
-held to the cut), drawn shot by shot : a frame-wise scale about the frame centre, then a centre crop back to 1920x1080.
+"""The creator's look zooms (looks/<look>/look.json) applied to the face track with ffmpeg, when Premiere's MCP Bridge is down
+(Premiere closed, or « Start Bridge » not clicked) or busy with another montage.
+Same keys as premiere/apply_look.py (plan_keys : the look's slow push per shot, eased accent on a strong word,
+held to the cut ; nothing when the creator chose no zoom), drawn shot by shot : a frame-wise scale about the frame centre, then a centre crop back to 1920x1080.
   python3 tools/look_ffmpeg.py <slug>      -> work/base-v-look.mp4 (same frames as base-v.mp4), sets plan.base_video
 Then prompteur.py compose uses it. The Premiere path stays the default when the bridge answers."""
 import json, os, subprocess, sys
