@@ -1,6 +1,6 @@
 {
   "name": "kit-montage-ia",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Montage de vidéos YouTube face caméra (un ou deux téléphones) par Claude Code et Premiere Pro, dans ton propre style : skills style-de-montage et montage-youtube.",
   "author": {
     "name": "cblain100-prog",
@@ -18,5 +18,14 @@
   ],
   "skills": [
     "./skills/"
+  ],
+  "agents": [
+    "./agents/kit-montage-animateur.md",
+    "./agents/kit-montage-chef.md",
+    "./agents/kit-montage-coupes.md",
+    "./agents/kit-montage-redites.md",
+    "./agents/kit-montage-sceptique.md",
+    "./agents/kit-montage-spectateur.md",
+    "./agents/kit-montage-visuels.md"
   ]
 }

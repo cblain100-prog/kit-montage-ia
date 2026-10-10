@@ -1,18 +1,20 @@
 #!/bin/bash
 # Installs the montage kit on a Mac. Safe to run again (it only adds what is missing).
-#   scripts/install.sh [--no-premiere] [--no-skills] [--skills-dir DIR]
+#   scripts/install.sh [--no-premiere] [--no-skills] [--skills-dir DIR] [--agents-dir DIR]
 # Steps : Homebrew tools (ffmpeg, node, python) -> .venv with requirements.txt -> GSAP (from npm) -> default sound effects
-#         -> face detector (Apple Vision) -> HyperFrames (npx, pinned) -> the two skills in ~/.claude/skills -> Premiere connector
+#         -> face detector (Apple Vision) -> HyperFrames (npx, pinned) -> the two skills in ~/.claude/skills and the
+#         verification / animation agents in ~/.claude/agents (never overwriting an existing file) -> Premiere connector
 #         -> tools/check.py
 set -euo pipefail
 KIT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$KIT"
-PREMIERE=1; SKILLS=1; SKILLS_DIR="$HOME/.claude/skills"
+PREMIERE=1; SKILLS=1; SKILLS_DIR="$HOME/.claude/skills"; AGENTS_DIR="$HOME/.claude/agents"
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-premiere) PREMIERE=0 ;;
     --no-skills) SKILLS=0 ;;
     --skills-dir) SKILLS_DIR="$2"; shift ;;
+    --agents-dir) AGENTS_DIR="$2"; shift ;;
     *) echo "unknown option $1"; exit 1 ;;
   esac
   shift
@@ -66,7 +68,7 @@ fi
 say "6/8 HyperFrames $HF_VERSION (rendu des animations)"
 npx --yes "hyperframes@$HF_VERSION" --version >/dev/null 2>&1 || npx --yes "hyperframes@$HF_VERSION" --help >/dev/null 2>&1 || echo "HyperFrames sera téléchargé au premier rendu"
 
-say "7/8 les deux skills"
+say "7/8 les deux skills et les agents"
 if [ "$SKILLS" = 1 ]; then
   mkdir -p "$HOME/.config/kit-montage-ia"
   echo "$KIT" > "$HOME/.config/kit-montage-ia/kit_dir"
@@ -76,6 +78,14 @@ if [ "$SKILLS" = 1 ]; then
       echo "$SKILLS_DIR/$s existe déjà (pas un lien) : laissé tel quel"
     else
       ln -sfn "$KIT/skills/$s" "$SKILLS_DIR/$s"; echo "skill $s -> $SKILLS_DIR/$s"
+    fi
+  done
+  mkdir -p "$AGENTS_DIR"
+  for a in agents/*.md; do
+    if [ -e "$AGENTS_DIR/$(basename "$a")" ]; then
+      cmp -s "$a" "$AGENTS_DIR/$(basename "$a")" || echo "agent $(basename "$a" .md) existe déjà dans $AGENTS_DIR : laissé tel quel"
+    else
+      cp "$a" "$AGENTS_DIR/"; echo "agent $(basename "$a" .md) -> $AGENTS_DIR"
     fi
   done
 fi
