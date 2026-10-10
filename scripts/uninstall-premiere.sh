@@ -5,6 +5,7 @@
 set -uo pipefail
 KIT="$(cd "$(dirname "$0")/.." && pwd)"
 KEEP=0; [ "${1:-}" = "--keep-debug-mode" ] && KEEP=1
+BRIDGE="${KIT_BRIDGE_DIR:-/tmp/premiere-mcp-bridge}"   # override only for tests
 if command -v claude >/dev/null && claude mcp get premiere-pro 2>/dev/null | grep -q "$KIT/vendor/premiere-mcp"; then
   claude mcp remove premiere-pro -s user && echo "Claude Code : premiere-pro removed"
 fi
@@ -26,5 +27,5 @@ if [ "$KEEP" = 0 ]; then
   for v in 10 11 12; do defaults delete "com.adobe.CSXS.$v" PlayerDebugMode 2>/dev/null; done
   echo "CEP debug mode off (com.adobe.CSXS.10/11/12 PlayerDebugMode removed)"
 fi
-rm -rf /tmp/premiere-mcp-bridge "$KIT/vendor/premiere-mcp" && echo "bridge folder and vendor/premiere-mcp removed"
+rm -rf "$BRIDGE" "$KIT/vendor/premiere-mcp" && echo "bridge folder and vendor/premiere-mcp removed"
 echo "Left in place : ~/.premiere-mcp-bridge/config.json (telemetry and update checks off ; delete it if you want)."
