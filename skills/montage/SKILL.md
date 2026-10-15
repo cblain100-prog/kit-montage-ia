@@ -74,7 +74,7 @@ Il copie dans `plan.json` les cadrages et le rythme de son style. Lis les averti
 
 ## 6. Musique et bruitages
 
-- `$PY tools/music_plan.py <slug> [--open-stop ... --open-back ...] [--close ...] [--outro ...]` : n'utilise que ce que son style a choisi (palette, niveaux, changement aux chapitres, ouverture, fin d'intro, fondu de fin). Palette vide : pas de musique. Passe les options `--open-*`, `--close`, `--outro` seulement si son style a la section correspondante.
+- `$PY tools/music_plan.py <slug> [--open-stop ... --open-back ...] [--close ...] [--switch ...] [--outro ...]` : n'utilise que ce que son style a choisi (palette, niveaux, changement aux chapitres, ouverture, fin d'intro, fondu de fin). Palette vide : pas de musique. Passe les options `--open-*`, `--close`, `--outro` seulement si son style a la section correspondante. Avec `--open-back` (le repère qui ouvre le montage, un claquement de doigts par exemple), aucune musique ne joue avant. `--switch <ancre>` : un seul changement de morceau (le 2e de sa palette, plus bas), par exemple là où il annonce ses étapes, pour un style sans changement à chaque chapitre.
 - Les bruitages sont ceux de son style (`sound.cues`) ; aucun s'il n'en a pas choisi.
 - Donne-lui les **crédits** des musiques utilisées pour sa description (le script les affiche).
 

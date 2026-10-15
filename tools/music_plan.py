@@ -19,6 +19,7 @@ ap.add_argument("slug"); ap.add_argument("--open-stop"); ap.add_argument("--open
 ap.add_argument("--close", help="end of the intro : the look's closing sound ends here")
 ap.add_argument("--after-close", help="where the 2nd track enters (default : the first chapter card)")
 ap.add_argument("--cut", action="append", default=[], help="a strong sentence : the music stops 0.35 s before it (needs intro.open.impact)")
+ap.add_argument("--switch", help="one change of track (2nd track of the palette, 1.5 s fade before), e.g. where the steps start ; for a style without change_on_chapter")
 ap.add_argument("--outro", help="the conclusion : the music fades out there, then no music under the call to action")
 ap.add_argument("--look", help="default : plan.look")
 A = ap.parse_args()
@@ -55,19 +56,23 @@ def pick():
 
 
 f, o = pick()
-segs.append({"file": f, "at": 0, "offset": o, "under_db": lu_intro})
+# with an opening mark (a snap of the fingers...), nothing plays before it : the raw part stays raw (Colin 2026-10-13)
+segs.append({"file": f, "at": A.open_back or 0, "offset": o, "under_db": lu_intro})
 if A.after_close and mu.get("change_on_chapter"):
     f, o = pick(); segs.append({"file": f, "at": A.after_close, "offset": o, "under_db": lu_body})
 elif A.close and lu_body != lu_intro:  # same track, its own level after the intro
     segs.append({"file": f, "at": A.close, "offset": o, "under_db": lu_body})
 for c in cards:
     f, o = pick(); segs.append({"file": f, "at": f"ins:{c}", "offset": o, "under_db": lu_body})
+if A.switch:  # Colin 2026-10-14 : a calmer track from « je t'explique ça en quatre étapes », lower, to the end
+    f, o = pick(); segs.append({"file": f, "at": A.switch, "offset": o, "under_db": lu_body})
 op = intro.get("open") or {}
 outro = mu.get("outro") or {}
 plan["music"] = {
     "segments": segs,
     "cuts": ([[c, -0.35, op.get("impact")] for c in A.cut] if op else [])
             + [[f"ins:{c}", -1.5, None, "fade"] for c in cards]
+            + ([[A.switch, -1.5, None, "fade"]] if A.switch else [])
             + ([[A.outro, outro.get("fade", 2.0), None, "fade", "end"]] if A.outro and outro else []),
     "stops": [], "duck_ratio": 1.6, "duck_release": 700, "fade_out": 2.5}
 if op and A.open_stop and A.open_back:
