@@ -7,6 +7,8 @@ E="$(cd "$(dirname "$0")/.." && pwd)"; W="$E/projects/$SLUG/work"
 PY="$E/.venv/bin/python"; [ -x "$PY" ] || PY=python3
 cd "$E"
 OUT=$("$PY" -c "import montage as M; print(M.output_dir())")
+# what he set himself in the studio (music levels) becomes his style before anything else (tools/learn.py)
+"$PY" tools/learn.py "$SLUG" --auto || true
 echo "STEP 1/6 coupes"; "$PY" prompteur.py cut "$SLUG"
 echo "STEP 2/6 plans caméra"; "$PY" prompteur.py base "$SLUG" > /dev/null
 ffmpeg -v error -y -i "$W/base.wav" -ac 1 -ar 16000 "$W/base16.wav"

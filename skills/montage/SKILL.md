@@ -28,6 +28,10 @@ if [ -d "$KIT/.venv" ]; then echo "KIT=$KIT"; cd "$KIT"; PY="$KIT/.venv/bin/pyth
    - Des skills ou des agents tout juste installés n'apparaissent qu'après un redémarrage de Claude Code : en attendant, lis et suis leur fichier dans `$KIT/skills/` ou `$KIT/agents/`.
    - « ATTENTION » musiques : rien à faire ici, c'est le style qui choisit.
 3. **Le style d'abord, toujours.** `$PY -c "import montage as M; print(M.personal_looks())"`. Liste vide : tu ne montes pas. Dis-lui en une phrase : « Avant ton premier montage, on crée ton style de montage, c'est lui que j'appliquerai à chaque vidéo. » puis lance le skill `create-style` (s'il n'apparaît pas dans tes skills, lis `$KIT/skills/create-style/SKILL.md` et suis-le) ; tu reviens ici quand il l'a validé, en gardant ce qu'il t'a déjà donné (dossier de rushes, script). Plusieurs styles : demande lequel. Un seul : c'est lui.
+   **Son mode d'emploi, avant de toucher à la vidéo** :
+   - `$PY tools/learn.py --pending --look <son-style>` : s'il reste des retours ou des réglages du studio pas encore retenus (une session précédente arrêtée avant la fin), fais d'abord l'étape 10, points 1 à 4, pour chaque projet listé. Il ne doit jamais avoir à redire une chose.
+   - Lis `looks/<son-style>/look.json` en entier, y compris `rules` (chaque règle vient d'un de ses retours, datée, avec sa phrase) et, si le style a `notes`, chacun de ces fichiers en entier (ses règles écrites ailleurs). Tu les appliques toutes, à chaque étape.
+   - Dis-lui en une ligne : « J'applique ton style et tes N règles. »
 4. **Premiere**, en une ligne, une fois le style en place :
    - pont inactif alors que le panneau est installé : dis-lui d'ouvrir Premiere et le panneau Fenêtre > Extensions > MCP Bridge (CEP) avant l'étape 7 ; le pont démarre tout seul à l'ouverture du panneau (sinon « Start Bridge ») ;
    - panneau jamais réglé : dis-lui ces deux réglages, une seule fois, puis continue (Premiere ne sert qu'à l'étape 7) :
@@ -115,7 +119,17 @@ nohup $PY review/serve.py "$OUT/<slug>-v1.mp4" --slug <slug> > projects/<slug>/r
 
 Le studio s'ouvre tout seul dans son navigateur (http://localhost:4700) : c'est la fin de chaque montage, toujours. Explique en 5 lignes : C pour commenter à l'instant précis, la timeline (S pour couper, clic puis Suppr, Cmd+Z), l'onglet Musique, « Reconstruire » (applique tout de suite ses coupes et sa musique, environ 25 minutes, la version suivante s'ouvre seule), et pour ses commentaires : « J'ai fini », puis il t'écrit « c'est fait » ici (le bouton ne te prévient pas : c'est son message qui te réveille). Donne le chemin de la vidéo, celui du projet Premiere, et les crédits pour la description.
 
-## 10. Les retours, à chaque version
+## 10. Les retours, à chaque version : ils deviennent son mode d'emploi
+
+C'est la promesse du kit : tout ce qu'il règle ou commente dans le studio, tu ne le refais plus jamais. Son « mode d'emploi », c'est `looks/<son-style>/look.json` (les réglages chiffrés et la liste `rules`), relu à l'étape 0 de chaque montage. L'outil `tools/learn.py` tient la liste de ce qui n'est pas encore retenu (journal du studio `projects/<slug>/review/studio-log.json` : ses volumes de musique, ses coupes avec les mots enlevés ; ses commentaires).
+
+Quand il écrit « c'est fait » (ou dès qu'il revient vers toi), dans cet ordre, sans exception :
+1. `$PY tools/learn.py <slug>` : ses volumes de musique sont déjà repris tout seuls ; l'outil liste le reste (L… = un réglage du studio, C… = un commentaire).
+2. Corrige la vidéo pour chaque élément.
+3. Pour CHAQUE élément, décide : un goût qui vaudra pour ses prochaines vidéos (« trop de… », « je veux toujours… », « je n'aime pas… », une coupe de silence ou de reprise qu'il a dû faire lui-même) devient une règle : `$PY tools/learn.py <slug> --rule "<la règle, claire et générale>" --quote "<sa phrase>" --from C…,L…` (`--replace "<début de l'ancienne règle>"` quand elle en contredit une : on remplace, on n'empile jamais). Un réglage chiffré change aussi la valeur dans `look.json` (pauses, niveaux, durées). Ce qui ne dépend que du contenu de cette vidéo (ce visuel-là, ce mot-là) : `--local --from C… --why "<pourquoi>"`. Dans le doute, c'est un goût : règle.
+4. Dis-lui en quelques lignes : « Retenu pour tes prochaines vidéos : … » (chaque nouvelle règle), puis construis la version suivante.
+5. `$PY tools/learn.py <slug>` doit afficher « Rien en attente » avant de livrer la nouvelle version.
+
 
 - Avant chaque passe, relis `projects/<slug>/review/<vidéo>.json`, même sans « J'ai fini ». Applique toute la liste d'un coup.
 - **Chaque retour de goût devient une règle de SON style** : un réglage chiffré change la valeur dans `looks/<son-style>/look.json` (en remplaçant l'ancienne), une préférence va dans `look.rules` avec la date et sa phrase. La vidéo suivante en profite.

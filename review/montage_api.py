@@ -28,6 +28,14 @@ class Montage:
     def save(self, plan):
         json.dump(plan, open(self.plan_path, "w"), indent=2, ensure_ascii=False)
 
+    def log(self, entry):
+        """Every change the creator makes in the studio is kept in projects/<slug>/review/studio-log.json, so that
+        tools/learn.py turns it into his style (« ce que tu règles dans le studio, Claude ne le refait plus »)."""
+        f = PR.P(self.slug, "review", "studio-log.json")
+        data = json.load(open(f)) if os.path.exists(f) else []
+        data.append(dict(entry, t=time.strftime("%Y-%m-%d %H:%M"), learned=False))
+        json.dump(data, open(f, "w"), indent=1, ensure_ascii=False)
+
     def voice(self):
         if self._voice is None:
             x, sr = sf.read(PR.voice(self.slug), always_2d=True)
@@ -144,7 +152,8 @@ class Montage:
 
     def delete_take(self, i):
         with self.lock:
-            plan = self.plan(); del plan["keep"][i]; self.save(plan)
+            plan = self.plan(); k = plan["keep"][i]; del plan["keep"][i]; self.save(plan)
+        self.log({"kind": "cut", "what": "take", "take": k[:2]})
         return {"ok": True}
 
     # ------------------------------------------------------------------ music
@@ -161,11 +170,18 @@ class Montage:
         return {"segments": out, "fade_out": m.get("fade_out", 1.5)}
 
     def set_music(self, levels):
+        changes = []
         with self.lock:
             plan = self.plan()
             for j, v in levels.items():
-                plan["music"]["segments"][int(j)]["under_db"] = float(v)
+                g = plan["music"]["segments"][int(j)]
+                if abs(g.get("under_db", 18) - float(v)) > 0.05:
+                    changes.append({"segment": int(j), "track": os.path.basename(g["file"]), "role": "intro" if int(j) == 0 else "body",
+                                    "from": g.get("under_db", 18), "to": float(v)})
+                g["under_db"] = float(v)
             self.save(plan)
+        for c in changes:
+            self.log(dict(c, kind="music"))
         return {"ok": True}
 
     def preview_music(self, levels):
@@ -256,14 +272,16 @@ def _cuts(self):
 def _delete_ranges(self, ranges):
     """Remove output ranges [a, b] from the edit : mapped to rush time through the current cut, subtracted from the takes."""
     pieces = PR.edl(self.slug)
-    src = []
+    src, per_range = [], []
     for a, b in ranges:
+        per_range.append([])
         for p in pieces:
             pa, pb = p["out"][0] / FPS, p["out"][1] / FPS
             lo, hi = max(a, pa), min(b, pb)
             if hi - lo > 0.02 and not p.get("cold"):
                 t = p.get("tempo", 1.0)
                 src.append((p["src"][0] / FPS + (lo - pa) * t, p["src"][0] / FPS + (hi - pa) * t))
+                per_range[-1].append(src[-1])
     with self.lock:
         plan = self.plan(); tb = self.take_bounds(plan); keep = []
         for (s, e), k in zip(tb, plan["keep"]):
@@ -285,6 +303,11 @@ def _delete_ranges(self, ranges):
         plan["keep"] = keep
         plan.setdefault("_history", []).append({"t": time.strftime("%Y-%m-%d %H:%M"), "deleted_out": ranges})
         self.save(plan)
+    ws = PR.words(self.slug)
+    for (a, b), parts in zip(ranges, per_range):
+        said = " ".join(w["text"].strip() for x, y in parts for w in ws if x - 0.02 <= w["start"] < y)
+        self.log({"kind": "cut", "what": "range", "out": [round(a, 2), round(b, 2)], "rush": [[round(x, 2), round(y, 2)] for x, y in parts],
+                  "removed_words": said, "silence_only": not said, "dur": round(sum(y - x for x, y in parts), 2)})
     return {"ok": True, "removed_src": [[round(x, 2), round(y, 2)] for x, y in src]}
 
 

@@ -54,7 +54,12 @@ Puis, une seule fois, dans Premiere Pro (le pas à pas en images est dans mon gu
    - **« Reconstruire »** applique tout de suite tes coupes et tes réglages de musique (environ 25 minutes, la nouvelle version s'ouvre seule).
    - Pour tes commentaires : clique **« J'ai fini »**, puis écris **« c'est fait »** à Claude dans Claude Code. Il lit chaque commentaire, corrige, refait passer la vidéo dans Premiere et rouvre le studio sur la nouvelle version.
 
-Chaque retour devient une règle de ton style, le « mode d'emploi » que Claude relit à chaque vidéo : il ne refait plus la même erreur à la vidéo suivante. Les premières vidéos demandent plusieurs allers-retours, les suivantes de moins en moins.
+Chaque retour devient une règle de ton « mode d'emploi » (ton fichier de style, `looks/<ton-style>/look.json`), que `/montage` relit avant chaque vidéo : il ne refait plus la même erreur.
+   - Ce que tu règles toi-même dans le studio (le volume de la musique) est retenu tout seul.
+   - Tes commentaires et tes coupes : à ton « c'est fait », Claude les transforme en règles (avec ta phrase), te dit « Retenu pour tes prochaines vidéos : … », et ne garde pour cette seule vidéo que ce qui la concerne.
+   - Si tu arrêtes en cours de route, rien n'est perdu : au montage suivant, `/montage` reprend d'abord ce qui n'a pas encore été retenu.
+
+Les premières vidéos demandent plusieurs allers-retours, les suivantes de moins en moins.
 
 Pour retoucher un détail à la main, ouvre le projet Premiere de la version finale et modifie ce que tu veux. Fais-le seulement sur la version finale : chaque nouvelle version recrée un projet Premiere neuf, et une retouche faite avant serait perdue.
 

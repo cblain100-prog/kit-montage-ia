@@ -72,7 +72,7 @@ Ensuite, deux questions courtes, seulement s'il a une musique : **« Tu veux un 
 
 ## 4. Écrire et valider
 
-- Écris `looks/<nom>/look.json` : même structure que `looks/_modele/look.json`, chaque valeur choisie avec un `_why` qui cite sa réponse et la date, `name` rempli. Vérifie que c'est du JSON valide (`$PY -c "import json; json.load(open('looks/<nom>/look.json'))"`).
+- Écris `looks/<nom>/look.json` : même structure que `looks/_modele/look.json`, chaque valeur choisie avec un `_why` qui cite sa réponse et la date, `name` rempli. Ses préférences dites en mots (« jamais de… », « toujours… ») vont dans `rules`, une par ligne : `"<date> · <règle> « <sa phrase> »"`. C'est son mode d'emploi : le skill montage le relit avant chaque vidéo et y ajoute chacun de ses retours du studio (`tools/learn.py`). Vérifie que c'est du JSON valide (`$PY -c "import json; json.load(open('looks/<nom>/look.json'))"`).
 - Résume-le en 7 lignes au plus : cadrages, rythme, zooms, bruitages, musique, mots à l'écran, couleurs et police.
 - Demande : **« Je garde ce style ? »** Il corrige un point : tu changes cette valeur et tu remontres le résumé. Il valide : dis-lui que le skill `montage` l'appliquera à chaque vidéo, et que ses retours dans le studio l'affineront.
 - Supprime le projet d'essai (`rm -rf projects/style-<nom>`), garde `projects/_styles/<nom>/`.
