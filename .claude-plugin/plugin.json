@@ -1,7 +1,7 @@
 {
   "name": "kit-montage-ia",
-  "version": "0.3.0",
-  "description": "Montage de vidéos YouTube face caméra (un ou deux téléphones) par Claude Code et Premiere Pro, dans ton propre style : skills create-style et montage.",
+  "version": "0.4.0",
+  "description": "Kit de montage Premiere Pro : ta vidéo YouTube face caméra montée automatiquement par Claude Code et Premiere Pro, dans ton style (skills /create-style et /montage, studio de revue).",
   "author": {
     "name": "cblain100-prog",
     "url": "https://github.com/cblain100-prog"

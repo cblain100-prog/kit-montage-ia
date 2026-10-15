@@ -4,13 +4,13 @@
     "name": "cblain100-prog"
   },
   "metadata": {
-    "description": "Le kit de montage IA : vidéos YouTube montées par Claude Code et Premiere Pro."
+    "description": "Kit de montage Premiere Pro : vidéos YouTube montées automatiquement par Claude Code et Premiere Pro."
   },
   "plugins": [
     {
       "name": "kit-montage-ia",
       "source": "./",
-      "description": "Montage de vidéos YouTube face caméra par Claude Code et Premiere Pro, dans ton propre style."
+      "description": "Kit de montage Premiere Pro : vidéos YouTube face caméra montées par Claude Code et Premiere Pro, dans ton propre style."
     }
   ]
 }

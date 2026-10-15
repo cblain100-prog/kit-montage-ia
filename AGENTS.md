@@ -1,4 +1,4 @@
-# kit-montage-ia : instructions for Claude
+# Kit de montage Premiere Pro (kit-montage-ia) : instructions for Claude
 
 A montage kit for YouTube talking-head videos (16:9, read at the teleprompter or not), filmed with one or two phones, edited in the creator's own style, assembled and exported by Adobe Premiere Pro through an MCP connector. The user is usually not a developer : talk to them in French, with « tu », one question at a time, no jargon, and never ask them to paste a prompt or edit a file.
 
@@ -18,7 +18,7 @@ A montage kit for YouTube talking-head videos (16:9, read at the teleprompter or
 4. Tell the user the two settings to make once in Premiere Pro (in French) :
    - Premiere Pro > Réglages > Plug-ins : cocher « Activer le mode développeur », puis quitter et relancer Premiere.
    - Fenêtre > Extensions > MCP Bridge (CEP) : le pont démarre seul à l'ouverture du panneau ; vérifier Temp Directory = `/tmp/premiere-mcp-bridge` ; « Start Bridge » seulement si le panneau affiche « Stopped ».
-5. Restart note : skills and agents added during the session appear after Claude Code restarts. Then the first step is always « crée mon style de montage ».
+5. Restart note : skills and agents added during the session appear after Claude Code restarts. Tell the user (in French) : « Quitte Claude Code, relance-le, puis tape /create-style. » Then, for each video : model Opus 5.5 with effort at max (`/model`, `/effort`), then `/montage`. The guide with screenshots is in Colin's Skool : https://www.skool.com/colin-lab-1969/about.
 
 The repo is also a Claude Code plugin (`.claude-plugin/`) : `claude plugin marketplace add cblain100-prog/kit-montage-ia` then `claude plugin install kit-montage-ia@kit-montage-ia`. The plugin brings the skills and the agents ; the skills still clone and install the kit in `~/kit-montage-ia` (never keep projects in the plugin cache).
 

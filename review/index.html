@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Revue montage</title>
+<title>Studio, Kit de montage Premiere Pro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -100,7 +100,7 @@
 </head>
 <body>
 <main>
-  <header><h1>Revue <b>montage</b></h1><span class="file" id="file"></span></header>
+  <header><h1>Studio <b>montage</b></h1><span class="file" id="file"></span></header>
   <video id="v" src="/video" preload="auto" playsinline></video>
   <div class="bar" id="bar"><div class="track"></div><div class="fill" id="fill"></div></div>
   <div class="row">
@@ -138,10 +138,10 @@
 <aside>
   <div class="tabs"><button class="on" data-p="p-com">Retours</button><button data-p="p-mus">Musique</button></div>
   <div class="pane on" id="p-com">
-    <div class="done-banner" id="banner">Envoyé. Dis à Claude « c'est fait », il applique toute la liste d'un coup.</div>
+    <div class="done-banner" id="banner">C'est noté. Écris maintenant « c'est fait » à Claude dans Claude Code (c'est copié, colle-le) : il applique tous tes commentaires d'un coup et rouvre le studio sur la nouvelle version.</div>
     <div class="head"><h2>Tes retours</h2><span class="count" id="count">0</span></div>
     <ol id="list" class="scroll"></ol>
-    <div class="foot"><button class="cta" id="done">J'ai fini, envoyer à Claude</button><span class="saved" id="saved"></span></div>
+    <div class="foot"><button class="cta" id="done">J'ai fini</button><span class="saved" id="saved"></span></div>
   </div>
   <div class="pane" id="p-cut">
     <div class="hint">Chaque raccord entre deux prises. Avance ou recule la <b>fin</b> de la phrase d'avant et le <b>début</b> de celle d'après, coche « phrase continue » pour coller deux prises, écoute, puis valide. Clique sur le texte pour voir le passage.</div>
@@ -225,7 +225,7 @@ function nextRate() { setRate(SPEEDS[(SPEEDS.indexOf(v.playbackRate) + 1) % SPEE
 $("slow").onclick = nextRate;
 v.addEventListener("loadedmetadata", () => { if (v.playbackRate !== v.defaultPlaybackRate) v.playbackRate = v.defaultPlaybackRate; });
 try { const r0 = parseFloat(localStorage.getItem("reviewRate")); if (SPEEDS.includes(r0)) setRate(r0); } catch (e) {}
-$("done").onclick = () => { data.done = true; persist(); render(); };
+$("done").onclick = () => { data.done = true; persist(); render(); try { navigator.clipboard.writeText("c'est fait"); } catch (e) {} };
 $("bar").onclick = e => { const r = $("bar").getBoundingClientRect(); v.currentTime = (e.clientX - r.left) / r.width * v.duration; };
 v.ontimeupdate = () => { $("time").textContent = `${fmt(v.currentTime)} / ${fmt(v.duration || 0)}`; $("fill").style.width = (100 * v.currentTime / (v.duration || 1)) + "%"; };
 v.onloadedmetadata = render;

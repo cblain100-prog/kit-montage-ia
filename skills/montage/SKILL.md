@@ -3,9 +3,9 @@ name: montage
 description: Monte une vidéo YouTube 16:9 où l'utilisateur parle face caméra (lue au prompteur ou non), filmée avec un ou deux téléphones, en appliquant SON style de montage (créé avant avec le skill create-style, obligatoire) et les règles de qualité du kit. Dérush à l'oreille, cadrages, zooms, bruitages, musique et mots à l'écran selon son style, animations HyperFrames écrites par des agents en parallèle, timeline posée et exportée par Premiere Pro via le connecteur, vérification par l'équipe d'agents du kit, puis le studio où il commente, coupe et règle la musique. Installe ce qui manque au premier lancement. Utiliser quand l'utilisateur dit "/montage", "monter ma vidéo", "monte ma vidéo", "monte ma vidéo YouTube", "fais le montage de ma vidéo", "fais le montage de mes rushes", ou donne un dossier de rushes paysage à monter. Pas pour un reel vertical.
 ---
 
-# Monter ma vidéo avec le kit de montage
+# Monter ma vidéo avec le Kit de montage Premiere Pro
 
-Tu montes la vidéo de l'utilisateur de bout en bout. Il n'écrit aucun prompt : tu poses tes questions toi-même, **une seule à la fois**, en français, en le tutoyant, sans jargon (un mot technique inévitable s'explique en une demi-phrase).
+Tu montes la vidéo de l'utilisateur de bout en bout. Avant de commencer, si le modèle n'est pas Opus 5.5 avec l'effort au maximum, dis-le-lui en une ligne (`/model`, puis `/effort` sur max) : c'est ce qui fait un bon dérush et de bonnes animations. Il n'écrit aucun prompt : tu poses tes questions toi-même, **une seule à la fois**, en français, en le tutoyant, sans jargon (un mot technique inévitable s'explique en une demi-phrase).
 
 Deux sources, et seulement elles :
 - **Son style** (`looks/<son-style>/look.json`) : tout ce qui est goût (rythme, pauses, cadrages, zooms, bruitages, musique, mots à l'écran, couleurs, police). Tu l'appliques, tu n'ajoutes jamais tes propres goûts ni ceux d'un autre créateur. Une valeur vide dans son style = on ne fait pas (pas de zoom, pas de bruitage, pas de musique, pas de mot à l'écran).
@@ -113,13 +113,14 @@ OUT=$($PY -c "import montage as M; print(M.output_dir())"); cp projects/<slug>/r
 nohup $PY review/serve.py "$OUT/<slug>-v1.mp4" --slug <slug> > projects/<slug>/review/serve.log 2>&1 &
 ```
 
-Le studio s'ouvre (http://localhost:4700). Explique en 4 lignes : C pour commenter à l'instant précis, la timeline (S pour couper, clic puis Suppr, Cmd+Z), l'onglet Musique, et « Reconstruire » (environ 25 minutes, la version suivante s'ouvre seule). Donne le chemin de la vidéo, celui du projet Premiere, et les crédits pour la description.
+Le studio s'ouvre tout seul dans son navigateur (http://localhost:4700) : c'est la fin de chaque montage, toujours. Explique en 5 lignes : C pour commenter à l'instant précis, la timeline (S pour couper, clic puis Suppr, Cmd+Z), l'onglet Musique, « Reconstruire » (applique tout de suite ses coupes et sa musique, environ 25 minutes, la version suivante s'ouvre seule), et pour ses commentaires : « J'ai fini », puis il t'écrit « c'est fait » ici (le bouton ne te prévient pas : c'est son message qui te réveille). Donne le chemin de la vidéo, celui du projet Premiere, et les crédits pour la description.
 
 ## 10. Les retours, à chaque version
 
 - Avant chaque passe, relis `projects/<slug>/review/<vidéo>.json`, même sans « J'ai fini ». Applique toute la liste d'un coup.
 - **Chaque retour de goût devient une règle de SON style** : un réglage chiffré change la valeur dans `looks/<son-style>/look.json` (en remplaçant l'ancienne), une préférence va dans `look.rules` avec la date et sa phrase. La vidéo suivante en profite.
-- Ses coupes et ses réglages de musique faits dans le studio sont déjà dans `plan.json`. Jamais de retouche dans Premiere avant la version finale : la timeline y est recréée à chaque version.
+- Ses coupes et ses réglages de musique faits dans le studio sont déjà dans `plan.json`. Il peut retoucher à la main dans Premiere, mais seulement la version finale : chaque version recrée un projet Premiere neuf, une retouche faite avant serait perdue. Dis-le-lui s'il en parle.
+- Après avoir appliqué ses commentaires : passe chacun en `"status": "fixed"` dans `projects/<slug>/review/<vidéo>.json`, construis la version suivante (`premiere/build_timeline.py <slug> --name <slug>-vN --export`, ou `review/rebuild.sh` si le pont est coupé), refais l'étape 8, puis rouvre le studio sur la nouvelle version (étape 9).
 
 ## Ce que tu confirmes à la fin
 

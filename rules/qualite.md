@@ -37,7 +37,7 @@ Ces règles valent pour toutes les vidéos, quel que soit le créateur. Ce ne so
 
 - Planche de contrôle regardée en entier (`prompteur.py sheet`), `tools/qa_measure.py`, `tools/redites.py`, `tools/qa_pack.py`, `tools/flashes.py`.
 - L'équipe de vérification (agents `kit-montage-coupes`, `kit-montage-redites`, `kit-montage-visuels`, `kit-montage-spectateur`), chaque constat de jugement passé au `kit-montage-sceptique`, puis le `kit-montage-chef`. On corrige les défauts confirmés et on contrôle soi-même image par image ce qui a changé.
-- On n'annonce jamais une durée trop courte : animations 30 à 40 minutes, une passe machine environ 25 minutes pour une vidéo complète, la vérification 15 minutes.
+- On n'annonce jamais une durée trop courte : environ 45 minutes à 1 heure en tout pour une vidéo d'une dizaine de minutes (animations, passe machine et Premiere, vérification) ; une reconstruction après retours environ 25 minutes.
 
 ## Pièges techniques
 

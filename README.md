@@ -1,15 +1,17 @@
-# Le kit de montage IA
+# Kit de montage Premiere Pro
 
-Ta vidéo YouTube montée par Claude Code et Premiere Pro, dans **ton** style.
+Claude x Premiere Pro : ta vidéo YouTube montée automatiquement, dans **ton** style. Gratuit. Le guide pas à pas est aussi dans mon Skool : https://www.skool.com/colin-lab-1969/about
 
 Tu filmes, tu donnes tes vidéos à Claude Code, et il fait le montage : il trie tes prises à l'oreille, alterne les cadrages, ajoute les zooms, les bruitages, la musique, les mots-clés et les animations, pose toute la timeline dans Premiere Pro et l'exporte. Ensuite tu corriges dans un petit studio dans ton navigateur (commentaires, coupes, volume de la musique), et chaque correction rend la vidéo suivante meilleure.
+
+Dedans : le skill `create-style` (ton style de montage, une seule fois), le skill `montage` (dérush à l'oreille, animations, Premiere Pro, vérification), les agents qui fabriquent et vérifient les animations, et le studio où tu fais tes retours.
 
 Tu n'as aucun prompt à écrire : les deux skills te posent leurs questions, une à la fois.
 
 ## Ce qu'il te faut
 
-- Un **Mac** (Apple Silicon conseillé : M1, M2, M3, M4...).
-- **Claude Code** installé, avec un abonnement Claude. **L'abonnement Max est conseillé** : un montage complet demande beaucoup d'échanges avec Claude (animations écrites par plusieurs agents en parallèle, vérifications).
+- Un **Mac** (Apple Silicon conseillé : M1, M2, M3, M4...). Le kit ne marche pas sur Windows.
+- **Claude Code** installé, avec un abonnement Claude. **L'abonnement Max est conseillé** : un montage complet demande beaucoup d'échanges avec Claude (animations écrites par plusieurs agents en parallèle, vérifications). Pour monter, choisis le modèle **Opus 5.5** avec l'effort au **maximum** (`/model`, puis `/effort`).
 - **Adobe Creative Cloud** avec **Premiere Pro** et **Media Encoder** (c'est Premiere qui monte et exporte ; sans lui, le kit monte quand même avec ffmpeg, mais tu n'as pas de projet Premiere à retoucher).
 - Un ou deux téléphones pour filmer, en **paysage**, en **4K** si possible, et un micro (cravate ou micro posé, un peu éloigné de la bouche pour que la voix ne sature pas).
 - Environ 10 Go de place libre.
@@ -22,26 +24,45 @@ Ouvre Claude Code et dis-lui :
 
 Il clone ce dépôt, installe ce qui manque (ffmpeg, Python, Node, le connecteur Premiere, les polices, des bruitages, de quoi récupérer des musiques libres, les deux skills et les agents de vérification) et vérifie que tout marche. Compte une dizaine de minutes. Il te demandera peut-être de coller une ligne dans le Terminal (pour Homebrew, qui demande ton mot de passe de Mac).
 
-Puis, une seule fois, dans Premiere Pro :
+Quand c'est fini, **quitte Claude Code et relance-le** : les commandes `/create-style` et `/montage` apparaissent à ce moment-là.
+
+Puis, une seule fois, dans Premiere Pro (le pas à pas en images est dans mon guide sur Skool : https://www.skool.com/colin-lab-1969/about) :
 
 1. **Premiere Pro > Réglages > Plug-ins** : coche « Activer le mode développeur », puis quitte et relance Premiere.
 2. **Fenêtre > Extensions > MCP Bridge (CEP)** : le pont démarre tout seul à l'ouverture du panneau. Vérifie juste que Temp Directory = `/tmp/premiere-mcp-bridge` (sinon corrige-le et « Save Configuration ») ; si le panneau affiche « Stopped », clique « Start Bridge ».
 
 À chaque montage, Premiere doit être ouvert avec le panneau MCP Bridge ouvert. Si le pont ne répond pas, le kit livre quand même la vidéo (ffmpeg) et un fichier XML de la timeline : dans Premiere, Fichier > Importer, et tu as ton projet à retoucher.
 
-## Utiliser
+## Utiliser, en 4 étapes
 
-1. **Ton style d'abord, une seule fois** : dis à Claude Code « crée mon style de montage » (skill `create-style`). Le kit n'a aucun style à lui : tout vient de toi. Il te demande une vidéo montée dont tu aimes le rendu (la tienne ou une autre), ton site ou ta charte, puis il te montre une de tes phrases montée de plusieurs façons (A, B, C) pour les cadrages, le rythme, les zooms, les bruitages, la musique et les mots à l'écran. Tu réponds par une lettre, ou « la B, mais parfois la C ». Il écrit ton fichier de style. Sans lui, le montage ne démarre pas.
-2. **Chaque vidéo** : dis « monte ma vidéo » (skill `montage`). Il te demande où sont tes vidéos, applique ton style et les règles de qualité du kit ([rules/qualite.md](rules/qualite.md) : pas de fin de mot coupée, pas d'image qui flashe, rien de privé à l'écran, volume aux normes de YouTube...), fait vérifier la vidéo par une équipe d'agents, puis t'ouvre le studio.
-3. **Le studio** : touche C pour commenter à l'instant précis, la timeline sous la vidéo pour couper (S, Suppr, Cmd+Z), l'onglet Musique pour régler le volume, et « Reconstruire » pour la version suivante.
+1. **Tourner** : voir « Bien filmer » juste en dessous. Dépose ta ou tes vidéos dans un dossier.
+2. **Ton style, une seule fois** : tape `/create-style`. Le kit n'a aucun style à lui : tout vient de toi. Il te demande :
+   - une vidéo de référence : une des tiennes, ou celle d'un créateur dont tu aimes le montage ;
+   - ta charte (couleurs, polices, logo), ou à défaut ton site ou ta page de vente ;
+   - puis il te montre de petits extraits A, B, C de quelques secondes : la même phrase montée de plusieurs façons (cadrages, zooms, bruitages, musiques, mots à l'écran). Tu dis ce que tu aimes et ce que tu n'aimes pas (« la B, mais parfois la C »), il refait des extraits jusqu'à ce que ce soit bon.
+   Claude enregistre tes choix dans ton fichier de style. Sans lui, le montage ne démarre pas.
+3. **Le montage, à chaque vidéo** : choisis Opus 5.5 avec l'effort au maximum, puis tape `/montage`. Il te demande où sont tes vidéos, puis il fait tout :
+   - le dérush à l'oreille : il écoute, réécoute chaque passage douteux et coupe au bon endroit ;
+   - les animations avec HyperFrames (un outil gratuit) : plusieurs agents en parallèle, chacun fait une animation, la regarde image par image et la corrige ;
+   - puis il prend le contrôle de Premiere Pro : il pose les plans, les zooms, les animations, les bruitages et la musique (baissée quand tu parles), et il exporte ;
+   - une équipe d'agents vérifie la vidéo avant de te la livrer ([rules/qualite.md](rules/qualite.md) : pas de fin de mot coupée, pas d'image qui flashe, rien de privé à l'écran, volume aux normes de YouTube...).
+   Compte environ 45 minutes à 1 heure pour une vidéo d'une dizaine de minutes : tu peux faire autre chose pendant ce temps.
+4. **Le studio** : dès que le montage est fini, il s'ouvre tout seul dans ton navigateur, avec ta vidéo dedans.
+   - **C** : commenter à l'instant précis (le commentaire se cale tout seul au bon moment de la vidéo).
+   - **S** pour couper, clic sur un morceau puis **Suppr** pour l'enlever, **Cmd+Z** pour annuler.
+   - Onglet **Musique** : le volume de chaque morceau.
+   - **« Reconstruire »** applique tout de suite tes coupes et tes réglages de musique (environ 25 minutes, la nouvelle version s'ouvre seule).
+   - Pour tes commentaires : clique **« J'ai fini »**, puis écris **« c'est fait »** à Claude dans Claude Code. Il lit chaque commentaire, corrige, refait passer la vidéo dans Premiere et rouvre le studio sur la nouvelle version.
 
-Une première version complète prend du temps : environ 30 à 40 minutes pour les animations, 25 minutes de montage machine, 15 minutes de vérification.
+Chaque retour devient une règle de ton style, le « mode d'emploi » que Claude relit à chaque vidéo : il ne refait plus la même erreur à la vidéo suivante. Les premières vidéos demandent plusieurs allers-retours, les suivantes de moins en moins.
+
+Pour retoucher un détail à la main, ouvre le projet Premiere de la version finale et modifie ce que tu veux. Fais-le seulement sur la version finale : chaque nouvelle version recrée un projet Premiere neuf, et une retouche faite avant serait perdue.
 
 ## Bien filmer pour un montage facile
 
 - Le téléphone en face de toi, en 4K : c'est ce qui permet de zoomer sur toi sans que l'image devienne floue.
 - Un micro, un peu éloigné de la bouche.
-- Quand tu te trompes, ne recommence pas depuis le début : marque deux secondes de silence et reprends la phrase. Claude garde la dernière prise complète.
+- Quand tu te trompes, ne recommence pas depuis le début : marque quelques secondes de silence et reprends là où tu en étais. Claude garde la dernière prise complète.
 - Avec deux téléphones : un de face (le principal), un de côté. Le kit les synchronise tout seul grâce au son.
 
 ## Musiques et bruitages
@@ -63,7 +84,7 @@ Pour tout enlever : `bash scripts/uninstall-premiere.sh`. Il retire le connecteu
 
 Tes rushes, tes transcriptions, tes montages et ton style restent sur ton Mac : le dossier `projects/` et ton style ne partent jamais sur GitHub. Le kit n'utilise aucune clé d'API : il passe par ton abonnement Claude Code.
 
-## Ce que fait cette version (0.3)
+## Ce que fait cette version (0.4)
 
 - Un ou deux téléphones, vidéo YouTube 16:9 où tu parles face caméra.
 - Mac uniquement.

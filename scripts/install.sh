@@ -1,5 +1,5 @@
 #!/bin/bash
-# Installs the montage kit on a Mac. Safe to run again (it only adds what is missing).
+# Installs the Kit de montage Premiere Pro on a Mac. Safe to run again (it only adds what is missing, and updates the kit's own skills and agents).
 #   scripts/install.sh [--no-premiere] [--no-skills] [--skills-dir DIR] [--agents-dir DIR]
 # Steps : Homebrew tools (ffmpeg, node, python) -> .venv with requirements.txt -> GSAP (from npm) -> default sound effects
 #         -> face detector (Apple Vision) -> HyperFrames (npx, pinned) -> the two skills in ~/.claude/skills and the
@@ -83,7 +83,9 @@ if [ "$SKILLS" = 1 ]; then
   mkdir -p "$AGENTS_DIR"
   for a in agents/*.md; do
     if [ -e "$AGENTS_DIR/$(basename "$a")" ]; then
-      cmp -s "$a" "$AGENTS_DIR/$(basename "$a")" || echo "agent $(basename "$a" .md) existe déjà dans $AGENTS_DIR : laissé tel quel"
+      if ! cmp -s "$a" "$AGENTS_DIR/$(basename "$a")"; then  # an update of the kit reaches the agents too (old copy kept)
+        cp "$AGENTS_DIR/$(basename "$a")" "$AGENTS_DIR/$(basename "$a").bak" && cp "$a" "$AGENTS_DIR/" && echo "agent $(basename "$a" .md) mis à jour (ancienne version : $(basename "$a").bak)"
+      fi
     else
       cp "$a" "$AGENTS_DIR/"; echo "agent $(basename "$a" .md) -> $AGENTS_DIR"
     fi
@@ -101,3 +103,6 @@ fi
 
 say "vérification"
 .venv/bin/python tools/check.py || true
+echo
+echo "Installation terminée. Quitte Claude Code, relance-le, puis tape /create-style pour créer ton style de montage."
+echo "Ensuite, à chaque vidéo : Opus 5.5 avec l'effort au maximum, puis /montage. À la fin, le studio s'ouvre tout seul."

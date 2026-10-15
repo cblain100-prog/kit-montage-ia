@@ -101,7 +101,7 @@ CSS = f"""@font-face{{font-family:'Inter';src:url('assets/fonts/inter-var.woff2'
 """
 
 
-def page(cid, body, js, dur, fade_in=True, fade_out=True, opaque=True):
+def page(cid, body, js, dur, fade_in=True, fade_out=False, opaque=True):  # no fade to black at the end : one black frame before the face (v17, 4 times)
     js_in = "tl.fromTo('#stg',{opacity:0},{opacity:1,duration:.12,ease:'none'},0);" if fade_in else ""
     js_out = f"tl.to('#stg',{{opacity:0,duration:.12,ease:'none'}},{dur - 0.12:.3f});" if fade_out else ""
     bg = f'<div style="position:absolute;inset:0;background:{BG}"></div>' if opaque else ""
@@ -578,11 +578,20 @@ def scene(ins, dur, rel, assets):
     {{anchor}} becomes seconds into the insert ({{src:238.4}}, {{0.3}}). Built in the project (build_inserts.py) for the
     concrete things the speaker names (a post, a mail, a spreadsheet) : each one illustrated, never a list of text."""
     import re as _re
-    js = _re.sub(r"\{\{(.*?)\}\}", lambda m: f"{t_of(rel, float(m.group(1)) if _re.fullmatch(r'[0-9.]+', m.group(1)) else m.group(1)):.3f}", ins.get("js", ""))
-    body = ('<div class="stage"></div><div id="cam" style="position:absolute;inset:0">' + ins["html"] + '</div><div class="vig"></div>')
+    js = _re.sub(r"\{\{(.*?)\}\}", lambda m: f"{t_of(rel, float(m.group(1)) if _re.fullmatch(r'[0-9.]+', m.group(1)) else m.group(1)):.3f}",
+                 ins.get("js", "").replace("{{dur}}", f"{dur:.3f}"))
+    ov = bool(ins.get("overlay"))  # pop-up over the face cam (a short label at a precise x,y) : no dark stage, no camera push
+    ins = dict(ins, html=ins["html"].replace("{{dur}}", f"{dur:.3f}"))  # a <video> (ins.face : assets/face.mp4) spans the insert
+    if ov:
+        body = ins["html"]
+        cues = [(c[0], t_of(rel, c[1]), c[2]) for c in ins.get("cues", [])]
+        return page(ins["id"], body, js, dur, fade_in=False, fade_out=False, opaque=False), cues
+    body = ('<div class="stage"></div><div id="cam" style="position:absolute;inset:0">' + ins["html"] + '</div>'
+            + ('' if ins.get("face") else '<div class="vig"></div>'))  # no darkened corners over his own shot : they vanished at the hand-back (v19)
     js = drift("#cam", dur, 1.0, ins.get("push", 1.04)) + "\n" + js
     cues = [("whoosh-short.wav", -0.08, -26)] + [(c[0], t_of(rel, c[1]), c[2]) for c in ins.get("cues", [])]  # "src:" anchors too
-    return page(ins["id"], body, js, dur, fade_in=False), cues
+    # a scene with the speaker's own video ends on his full-frame shot : no fade to black at the end (v16 at 0:58, one black frame)
+    return page(ins["id"], body, js, dur, fade_in=False, fade_out=ins.get("fade_out", False)), cues
 
 
 # ------------------------------------------------------------------ keyword : one or two strong words, huge, on the face cam

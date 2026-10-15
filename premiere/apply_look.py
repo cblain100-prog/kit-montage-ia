@@ -4,7 +4,8 @@ Face track = work/base-v.mp4 (framings already cut by prompteur.py base). Premie
   B (default) : every shot pushes 100 -> 108 % over its length ;
   C (accent)  : on a strong word (impact sound or keyword of the plan), quick eased zoom +12 %, held to the cut.
 Output : work/base-v-look.mp4 (same length as base-v), to set as plan.base_video before prompteur.py compose."""
-import json, os, re, subprocess, sys, time
+import json, math, os, re, subprocess, sys, time
+import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import prompteur as PR
 from ppclient import PP
@@ -54,8 +55,26 @@ def plan_keys(slug, until):
     zd, alt = z.get("dezoom"), zb.get("alternate", False)
     if zd and not zd.get("enabled", False):
         zd = None
+    static_until = plan.get("zoom_static_until", 0)  # no zoom at all before this output time (e.g. a "raw footage" cold open)
     keys = []
-    for k, (a, b) in enumerate(shots):
+    if zb.get("kind") == "drift":  # one very slow zoom running across the cuts, in then out (Colin 2026-10-13 : « des zooms
+        # très rapides qui ne servent à rien, si ce n'est à perdre la personne. Il faut que ça soit du zoom, mais très lent »)
+        amp, per = zb.get("amp", 10), zb.get("period", 30)
+        dv0 = drift_curve(plan, times, static_until, until, amp, per)
+        level, cuts = PR.cut_level(plan, PR.edl(slug))  # the reframing at every cut, same as inside the scenes (face_clip)
+        dv = lambda t: dv0(t) * level(t)
+        g = plan.get("cut_glide", 0.6)
+        near = [c + d for c in cuts for d in (-1 / 30, 0, g * .1, g * .2, g * .35, g * .55, g * .8, g)]
+        for a, b in shots:
+            if b <= static_until:
+                keys += [(a, 100), (b - F, 100)]
+                continue
+            pts = [a] + [x for x in np.arange(math.ceil(a), b - F, 1.0) if x > a] + [x for x in near if a < x < b - F] + [b - F]
+            keys += [(t, dv(t)) for t in pts]
+    for k, (a, b) in enumerate([] if zb.get("kind") == "drift" else shots):
+        if b <= static_until:
+            keys += [(a, 100), (b - F, 100)]
+            continue
         span = max(b - a, F)
         f0, f1 = (zb["to"], zb["from"]) if alt and k % 2 else (zb["from"], zb["to"])
         v = lambda t: f0 + (f1 - f0) * (t - a) / span
@@ -74,6 +93,26 @@ def plan_keys(slug, until):
         if t not in seen and t < until:
             seen.add(t); out.append((t, round(val, 2)))
     return out, acc
+
+
+def drift_curve(plan, times, static_until, until, amp, per):
+    """The slow zoom, back to exactly 100 % at the start and the end of every scene that shows the speaker's own video
+    (face:true, drawn at 100 %) : otherwise the shot jumped about 10 % when the scene handed back to the edit (v19 at
+    3:52 and 4:17, « un petit bug quand l'écran revient en plein écran »). Between two such scenes : whole in-and-out
+    cycles of about plan.period s, never faster than the full drift (a short gap gets a smaller zoom)."""
+    face = sorted(tuple(times[i["id"]][:2]) for i in plan["inserts"] if i.get("face") and i["id"] in times)
+    bounds = sorted({static_until, until} | {x for ab in face for x in ab})
+    gaps = [(a, b) for a, b in zip(bounds, bounds[1:]) if b > a and not any(fa - 0.01 <= a and b <= fb + 0.01 for fa, fb in face)]
+
+    def dv(t):
+        g = next(((a, b) for a, b in gaps if a <= t <= b), None)
+        if g is None or t <= static_until:
+            return 100.0
+        L = g[1] - g[0]
+        n = max(1, round(L / per))
+        A = amp * min(1.0, L / per)
+        return 100 + A * (0.5 - 0.5 * math.cos(2 * math.pi * n * (t - g[0]) / L))
+    return dv
 
 
 def main(slug, until):

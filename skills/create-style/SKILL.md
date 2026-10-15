@@ -22,7 +22,7 @@ Kit absent ou ligne « MANQUE » : installe-le comme le dit le skill `montage` (
 
 ## 1. Une vidéo dont il aime le montage
 
-Question : **« T'as une vidéo montée dont t'aimes bien le rendu ? Une des tiennes, ou une vidéo de quelqu'un d'autre dont le montage te plaît. Glisse-la ici, sinon dis non. »**
+Question : **« Est-ce que tu as une vidéo de référence ? Une vidéo montée dont t'aimes bien le rendu : une des tiennes, ou celle d'un créateur dont le montage te plaît. Glisse-la ici, sinon dis non. »**
 
 Si oui :
 ```bash
@@ -36,7 +36,7 @@ Si non : tout se décide à l'étape 3.
 
 ## 2. Sa charte
 
-Question : **« C'est quoi ton site, ou ta page de vente ? Sinon donne-moi tes couleurs, tes polices et ton logo. »**
+Question : **« C'est quoi ta charte ? Tes couleurs, tes polices, ton logo. Si t'en as pas, donne-moi ton site ou ta page de vente. »**
 
 - Un site : récupère la page (WebFetch, et `curl -sL` pour le CSS), repère la couleur d'accent (boutons, liens, la couleur vive qui revient), la couleur de fond, les polices (`font-family`, liens Google Fonts), le logo (`<link rel="icon">`, `og:image`, logo de l'en-tête). Montre-le-lui en une ligne et demande si c'est juste.
 - Police : si c'est une police Google Fonts (licence OFL), télécharge la graisse grasse depuis `https://github.com/google/fonts` (dossier `ofl/<nom>/`) dans `assets/fonts/`, avec son `OFL.txt` renommé `<Nom>-OFL.txt`, déclare-la dans `brand.fonts` et `brand.title_family`. Police payante ou introuvable : dis-le et propose la plus proche des polices du kit (Inter, Inter Tight, Poppins, Anton), il choisit.

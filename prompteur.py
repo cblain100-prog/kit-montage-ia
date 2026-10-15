@@ -192,10 +192,16 @@ def tighten(slug, plan, s, e):
     pieces, cur = [], head
     for k0, k1 in zip(idx[:-1], idx[1:]):
         gap = (k1 - k0 - 1) / 100
+        qs, qe = s + (k0 + 1) / 100, s + k1 / 100
+        # plan.keep_pauses [[a, b]] (rush s) : a pause a gesture runs through (fingers counting then a thumb) stays whole,
+        # a shortened one made the hand jump (Colin, 2026-10-13, « juste avant première étape, ça fait un truc bizarre »)
+        if any(a_ <= qe and qs <= b_ for a_, b_ in plan.get("keep_pauses", [])):
+            continue
         if gap > maxp:
-            qs, qe = s + (k0 + 1) / 100, s + k1 / 100
-            pieces.append((cur, qs + keep * 0.62))  # more air after the last word than before the next (v2 : cuts too soon after he speaks)
-            cur = qe - keep * 0.38
+            # plan.tight_pauses [[a, b]] (rush s) : a pause he wants « plus dynamique » keeps only 0.35 s (v26 at 1:11)
+            keep_here = 0.35 if any(a_ <= qe and qs <= b_ for a_, b_ in plan.get("tight_pauses", [])) else keep
+            pieces.append((cur, qs + keep_here * 0.62))  # more air after the last word than before the next (v2 : cuts too soon after he speaks)
+            cur = qe - keep_here * 0.38
     pieces.append((cur, tail))
     return [(a_, b_) for a_, b_ in pieces if b_ - a_ > 0.1]
 
@@ -538,12 +544,16 @@ def cmd_inserts(slug):
             shutil.copy(os.path.join(HERE, "assets", "fonts", f), f"{d}/assets/fonts/")
         for f in ins.get("files", []):
             shutil.copy(P(slug, f), f"{d}/assets/")
+        if ins.get("face"):  # the speaker's own edited shot, unzoomed, for a scene that moves him (assets/face.mp4)
+            shutil.copy(face_clip(slug, plan, pieces, ins["_s"], ins["_e"] + 0.5), f"{d}/assets/face.mp4")  # + 0.5 s : never a frame without video at the end (v13, black flash)
         shutil.copy(os.path.join(HERE, "assets", "hyperframes.json"), f"{d}/hyperframes.json")
         rel = lambda a: max(0.0, T(a) - ins["_s"])
         html, cues = B.build(ins, ins["_e"] - ins["_s"], rel, P(slug, "assets"))
         ins["_cues"] = [c for c in cues if 0 <= c[1] < ins["_e"] - ins["_s"] or c[1] < 0] + [list(c) for c in ins.get("sfx", [])]
         for f in ins.get("files", []):
             html += f"<!-- {hashlib.md5(open(P(slug, f), 'rb').read()).hexdigest()} -->"
+        if ins.get("face"):  # the speaker's clip is part of the render : a new clip (other cut, reframing) re-renders the scene
+            html += f"<!-- face {hashlib.md5(open(f'{d}/assets/face.mp4', 'rb').read()).hexdigest()} -->"
         open(f"{d}/index.html", "w").write(html)
         lint = subprocess.run(["npx", "--yes", HF, "lint"], cwd=d, capture_output=True, text=True).stdout
         errs = [l for l in lint.splitlines() if "✗" in l]
@@ -554,6 +564,98 @@ def cmd_inserts(slug):
     for i in plan["inserts"]:
         i.pop("_words", None)
     face_report(slug, plan, pieces)
+
+
+def cut_level(plan, pieces):
+    """Every real cut on the speaker's shot moves his framing a little (Colin 2026-10-14, v24 : « quand il y a un mini cut,
+    je ne veux pas que ce soit en plein écran pendant le cut : que ma tête bouge, se décale, ou se retire un peu, pour que
+    le cut soit moins vu »). The framing toggles between 100 % and 100 + plan.cut_reframe % (7) at each real cut, gliding
+    over plan.cut_glide s (0.6) centred on the cut. Returns (level(t_out) -> factor, list of cut times). Applied the same
+    way to the face track in Premiere (premiere/apply_look.py) and to the speaker's video inside the scenes (face_clip),
+    so the two always match at a hand-back."""
+    amp, glide = plan.get("cut_reframe", 0.07), plan.get("cut_glide", 0.6)
+    t0 = plan.get("zoom_static_until", 0) + 0.05
+    cuts = []
+    for k, p in enumerate(pieces[1:], 1):
+        if pieces[k - 1]["src"][1] != p["src"][0] and p["out"][0] / FPS > t0:
+            c = p["out"][0] / FPS
+            if not cuts or c - cuts[-1] >= 0.7:
+                cuts.append(c)
+    def level(t):
+        lv = 0.0
+        for i, c in enumerate(cuts):
+            if t < c:
+                break
+            target = 1.0 if i % 2 == 0 else 0.0  # in on the 1st cut, back out on the 2nd...
+            # the cut STARTS the move (v26 : « c'est le cut qui doit déclencher l'animation, pas un cut en plein milieu ») :
+            # it leaves fast on the cut frame and settles over plan.cut_glide s
+            x = min(1.0, (t - c) / glide)
+            x = 1 - (1 - x) ** 3
+            lv = lv + (target - lv) * x
+        return 1.0 + amp * lv
+    return level, cuts
+
+
+def _apply_level(src, dst, s, level):
+    """Re-encode src (frame i at output time s + i/30) scaled by level(t) around the frame centre, sub-pixel exact."""
+    from PIL import Image
+    W_, H_ = 1920, 1080
+    rd = subprocess.Popen(["ffmpeg", "-v", "error", "-i", src, "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE, bufsize=10 ** 8)
+    wr = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W_}x{H_}", "-r", "30", "-i", "-",
+                           "-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p",
+                           "-c:v", "libx264", "-preset", "veryfast", "-crf", "15", "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-g", "15", "-movflags", "+faststart", dst],
+                          stdin=subprocess.PIPE)
+    n, fb = 0, W_ * H_ * 3
+    while True:
+        buf = rd.stdout.read(fb)
+        if len(buf) < fb:
+            break
+        z = level(s + n / FPS)
+        if abs(z - 1.0) < 1e-4:
+            wr.stdin.write(buf)
+        else:
+            im = Image.frombuffer("RGB", (W_, H_), buf, "raw", "RGB", 0, 1)
+            # output pixel (x, y) <- input ((x - cx) / z + cx, (y - cy) / z + cy)
+            cx, cy = W_ / 2, H_ / 2
+            im = im.transform((W_, H_), Image.AFFINE, (1 / z, 0, cx - cx / z, 0, 1 / z, cy - cy / z), resample=Image.BICUBIC)
+            wr.stdin.write(im.tobytes())
+        n += 1
+    wr.stdin.close(); rd.wait(); wr.wait()
+
+
+def face_clip(slug, plan, pieces, s, e):
+    """The face cam of output range [s, e] cut exactly like the edit (same rush ranges) but on the wide angle, so a
+    scene can shrink, move or frame the speaker himself (« mets-moi en bas à droite », 2026-10-13). Cached by range."""
+    a_out, b_out = round(s * FPS), round(e * FPS)
+    parts = []
+    for p in pieces:
+        o0, o1 = max(p["out"][0], a_out), min(p["out"][1], b_out)
+        if o1 > o0:
+            s0 = p["src"][0] + (o0 - p["out"][0])
+            parts.append((p["angle"][0], s0, s0 + (o1 - o0)))
+    level, cuts = cut_level(plan, pieces)
+    lv_sig = [round(level(s + i / 10), 4) for i in range(int((e - s) * 10) + 1)]
+    key = json.dumps([parts, plan.get("grade", {}), lv_sig, "bt709tv"])
+    f = P(slug, "work", "faces", hashlib.md5(key.encode()).hexdigest()[:12] + ".mp4")
+    if os.path.exists(f):
+        return f
+    os.makedirs(os.path.dirname(f), exist_ok=True)
+    cmd, filt = ["ffmpeg", "-v", "error", "-y"], []
+    grade = plan.get("grade", {})
+    for k, (c, a, b) in enumerate(parts):  # one seeked input per range (a single input trimmed late decodes the whole rush)
+        cmd += ["-ss", f"{a / FPS + cam_offset(plan, c):.4f}", "-t", f"{(b - a) / FPS + 0.5:.4f}", "-i", P(slug, "assets", f"rush-{c}.mov")]
+        filt.append(f"[{k}:v]setpts=PTS-STARTPTS,fps=30,scale=1920:1080{',' + grade[c] if grade.get(c) else ''},trim=end_frame={b - a}[v{k}]")
+    # same colour pipeline as the face track (cmd_base) : limited range, BT.709 matrix, tagged ; untagged, the scenes'
+    # browser read it with another matrix and his skin shifted green / less blue at every scene (v26, « la colorimétrie change »)
+    fc = (";".join(filt) + ";" + "".join(f"[v{k}]" for k in range(len(parts)))
+          + f"concat=n={len(parts)}:v=1:a=0,scale=out_color_matrix=bt709:out_range=tv,format=yuv420p[o]")
+    M.sh(cmd + ["-filter_complex", fc, "-map", "[o]", "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "15", "-r", "30",
+                "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-g", "15", "-movflags", "+faststart", f + ".part.mp4"])
+    if any(abs(v - 1.0) > 1e-4 for v in lv_sig):  # the same reframing at the cuts as the face track in Premiere
+        _apply_level(f + ".part.mp4", f + ".lv.mp4", s, level)
+        os.replace(f + ".lv.mp4", f + ".part.mp4")
+    os.replace(f + ".part.mp4", f)
+    return f
 
 
 def face_report(slug, plan, pieces):
@@ -655,7 +757,18 @@ def sfx_cues(slug, plan, times, dur):
         if not any(k[0] == c[0] and abs(k[1] - c[1]) < 0.15 for k in kept[-12:]):
             kept.append(c)
     cues = [c for c in kept if sfx_file(c[0])]
-    return cues
+    # a few light sounds, never a rattle : at most one sound every look.sound.min_gap s (Colin 2026-10-13, v16 0:40-0:45 :
+    # « beaucoup trop de bruitages, je veux qu'ils soient plus légers et qu'il n'y en ait que quelques-uns ») ; the
+    # music hooks (impact, reverse cymbal) are not sound effects and are not thinned here
+    gap = (look or {}).get("sound", {}).get("min_gap", 0)
+    if gap:
+        thin, last = [], -99.0
+        for c in cues:
+            if c[1] - last >= gap:
+                thin.append(c); last = c[1]
+        cues = thin
+    soften = (look or {}).get("sound", {}).get("gain_db", 0)
+    return [(f, t, db + soften) for f, t, db in cues]
 
 
 def load_look(plan):
