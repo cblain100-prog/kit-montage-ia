@@ -36,6 +36,7 @@ tools/                projet.py (new project from 1 or 2 videos : sync, faces, v
 premiere/             build_timeline.py (whole timeline + export), apply_look.py (zoom keys), ppclient.py, ppbatch.py, paths.py, zoom_variants.py
 review/               the studio : serve.py, montage_api.py, index.html, rebuild.sh (full rebuild, Premiere or ffmpeg fallback)
 looks/_modele/        the empty structure of a style ; the user's style is looks/<name>/look.json (git-ignored), built by create-style
+docs/                 brancher-claude-a-premiere-pro.md : the user's step-by-step guide to connect Premiere (French) ; keep it in sync with install-premiere.sh
 rules/qualite.md      universal quality rules (not taste) applied to every video
 agents/               kit-montage-coupes, -redites, -visuels, -spectateur, -sceptique, -chef (verification), -animateur (animations)
 skills/               create-style (once, ALWAYS first), montage (each video, refuses to start without a personal style)

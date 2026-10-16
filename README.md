@@ -26,7 +26,7 @@ Il clone ce dépôt, installe ce qui manque (ffmpeg, Python, Node, le connecteur
 
 Quand c'est fini, **quitte Claude Code et relance-le** : les commandes `/create-style` et `/montage` apparaissent à ce moment-là.
 
-Puis, une seule fois, dans Premiere Pro (le pas à pas est aussi dans mon guide sur Skool : https://www.skool.com/colin-lab-1969/about) :
+Puis, une seule fois, dans Premiere Pro (le pas à pas complet, rien que pour brancher Premiere : [Brancher Claude à Premiere Pro](docs/brancher-claude-a-premiere-pro.md)) :
 
 1. **Premiere > Préférences > Plug-ins** (le menu Premiere, en haut à gauche ; en anglais Preferences > Plugins) : coche « Activer le mode de développement » (« Enable developer mode »), puis quitte et relance Premiere.
 2. **Fenêtre > Extensions > MCP Bridge (CEP)** : le pont démarre tout seul à l'ouverture du panneau. Vérifie juste que Temp Directory = `/tmp/premiere-mcp-bridge` (sinon corrige-le et « Save Configuration »). Le panneau doit afficher « Connected » et « Premiere Pro: Ready » ; s'il reste sur « Disconnected », clique « Start Bridge ».
