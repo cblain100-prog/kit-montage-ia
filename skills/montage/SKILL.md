@@ -35,8 +35,8 @@ if [ -d "$KIT/.venv" ]; then echo "KIT=$KIT"; cd "$KIT"; PY="$KIT/.venv/bin/pyth
 4. **Premiere**, en une ligne, une fois le style en place :
    - pont inactif alors que le panneau est installé : dis-lui d'ouvrir Premiere et le panneau Fenêtre > Extensions > MCP Bridge (CEP) avant l'étape 7 ; le pont démarre tout seul à l'ouverture du panneau (sinon « Start Bridge ») ;
    - panneau jamais réglé : dis-lui ces deux réglages, une seule fois, puis continue (Premiere ne sert qu'à l'étape 7) :
-     1. Premiere Pro > Réglages > Plug-ins : coche « Activer le mode développeur », puis quitte et relance Premiere.
-     2. Fenêtre > Extensions > MCP Bridge (CEP) : le pont démarre seul ; vérifier que Temp Directory = `/tmp/premiere-mcp-bridge` (sinon le corriger et « Save Configuration ») ; s'il affiche « Stopped », « Start Bridge ».
+     1. Premiere > Préférences > Plug-ins (le menu Premiere, en haut à gauche ; en anglais Preferences > Plugins) : coche « Activer le mode de développement » (« Enable developer mode »), puis quitte et relance Premiere.
+     2. Fenêtre > Extensions > MCP Bridge (CEP) : le pont démarre seul ; vérifier que Temp Directory = `/tmp/premiere-mcp-bridge` (sinon le corriger et « Save Configuration ») ; il doit afficher « Connected » et « Premiere Pro: Ready », sinon (« Disconnected ») « Start Bridge ».
    - pas de Premiere : le kit monte quand même avec ffmpeg, et livre un fichier XML de la timeline à importer plus tard dans Premiere. Dis-le une fois.
 
 ## 1. Les rushes

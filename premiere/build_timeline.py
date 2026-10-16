@@ -151,7 +151,7 @@ def main():
     A.name = A.name or f"montage-{slug}"
     age = paths.heartbeat_age()
     if age is None or age > 60:
-        raise SystemExit("Premiere's MCP Bridge is not running (open Premiere and Window > Extensions > MCP Bridge (CEP) ; « Start Bridge » if it shows Stopped). "
+        raise SystemExit("Premiere's MCP Bridge is not running (open Premiere and Window > Extensions > MCP Bridge (CEP) ; « Start Bridge » if it shows Disconnected). "
                          "Fallback without Premiere : tools/look_ffmpeg.py <slug>, prompteur.py compose <slug> <name>, tools/export_xml.py <slug> <name>")
     plan, W = PR.load_plan(slug), PR.P(slug, "work")
     times = json.load(open(f"{W}/insert-times.json"))

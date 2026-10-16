@@ -132,8 +132,8 @@ fi
 cat <<'EOF'
 
 Dans Premiere Pro, une seule fois :
-  1. Premiere Pro > Réglages > Plug-ins : coche « Activer le mode développeur », puis quitte et relance Premiere.
+  1. Premiere > Préférences > Plug-ins (le menu Premiere, en haut à gauche ; en anglais Preferences > Plugins) : coche « Activer le mode de développement » (« Enable developer mode »), puis quitte et relance Premiere.
   2. Fenêtre > Extensions > MCP Bridge (CEP) : le panneau démarre le pont tout seul à son ouverture.
-     Vérifie que Temp Directory = /tmp/premiere-mcp-bridge ; si le panneau affiche « Stopped », clique « Start Bridge ».
+     Vérifie que Temp Directory = /tmp/premiere-mcp-bridge. Le panneau doit afficher « Connected » et « Premiere Pro: Ready » ; s'il reste sur « Disconnected », clique « Start Bridge ».
 A chaque montage : Premiere ouvert avec le panneau MCP Bridge ouvert (il peut rester dans un coin de l'écran).
 EOF
